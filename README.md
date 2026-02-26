@@ -1,123 +1,54 @@
-# Block Blast Fullstack Starter
+# Block Blast
 
-Starter project để phát triển game kiểu Block Blast với:
+Game Block Blast clone — Next.js (App Router) + Tailwind CSS **3.4.10** tại root, backend Express API ở `backend/`.
 
-- `frontend`: Next.js (App Router) + Tailwind CSS **3.4.10**
-- `backend`: Node.js + Express API
-- Root scripts để chạy fullstack cùng lúc
+## Công nghệ
 
-## 1) Công nghệ & thư viện đã cài
+- **Next.js 16** + React 19 + TypeScript
+- **Tailwind CSS 3.4.10** + PostCSS + Autoprefixer
+- **@dnd-kit** (drag & drop), **lucide-react** (icons)
+- **Backend**: Express, cors, helmet, morgan, dotenv
 
-### Frontend (`frontend`)
-- `next`, `react`, `react-dom`
-- `tailwindcss@3.4.10`, `postcss`, `autoprefixer`
-- `typescript`, `eslint`, `eslint-config-next`
+## Cấu trúc thư mục
 
-### Backend (`backend`)
-- `express`: tạo REST API
-- `cors`: cho phép frontend gọi API
-- `helmet`: bảo mật headers cơ bản
-- `morgan`: log request
-- `dotenv`: quản lý biến môi trường
-- `nodemon` (dev): tự restart server khi sửa code
-
-### Root (`/`)
-- `concurrently`: chạy frontend + backend cùng lúc
-
-## 2) Cấu trúc thư mục
-
-```bash
-block-blast/
-├── frontend/               # Next.js app
-├── backend/                # Node.js API
+```
+block-blast/            ← Next.js app (ROOT - Hostinger detect)
+├── src/
+│   ├── app/            # App Router pages
+│   ├── components/     # Game components
+│   └── lib/            # Utils, shapes
+├── public/             # Static assets
+├── backend/            # Node.js Express API (tách riêng)
 │   ├── src/server.js
 │   └── .env.example
-├── package.json            # scripts fullstack
+├── package.json        # Next.js dependencies → Hostinger nhận ra
+├── next.config.ts
+├── tailwind.config.js
+├── tsconfig.json
 └── README.md
 ```
 
-## 3) Chạy local
-
-### Yêu cầu
-- Node.js LTS khuyến nghị: **v22.x** (hoặc v20.19+)
-- npm 10+
-
-> Bạn đang dùng Node v23 nên vẫn chạy được, nhưng có thể có cảnh báo engine từ một số package.
-
-### Cài dependencies
-```bash
-# root
-npm install
-
-# frontend
-cd frontend
-npm install
-
-# backend
-cd ../backend
-npm install
-```
-
-### Chạy fullstack
-```bash
-# tại root
-npm run dev
-```
-
-- Frontend: http://localhost:3000
-- Backend: http://localhost:4000/api/health
-
-## 4) API backend mẫu
-
-- `GET /api/health`: kiểm tra server
-- `GET /api/leaderboard`: dữ liệu bảng điểm mẫu
-
-Biến môi trường backend:
-1. Copy `backend/.env.example` thành `backend/.env`
-2. Điều chỉnh giá trị nếu cần
-
-## 5) Quy trình push GitHub
+## Chạy local
 
 ```bash
-git init
-git add .
-git commit -m "init block blast fullstack starter"
-git branch -M main
-git remote add origin <YOUR_GITHUB_REPO_URL>
-git push -u origin main
+npm install
+npm run dev          # → http://localhost:3000
+
+# Backend (terminal riêng)
+cd backend
+npm install
+npm run dev          # → http://localhost:4000
 ```
 
-## 6) Deploy với Hostinger từ GitHub
+## Deploy Hostinger
 
-Luồng khuyến nghị:
-1. Push code lên GitHub (repo public/private đều được nếu Hostinger có quyền truy cập).
-2. Trong Hostinger, tạo website/app mới và chọn deploy từ GitHub repo.
-3. Cấu hình build/start:
-   - Frontend (Next.js):
-     - Install: `npm install`
-     - Build: `npm run build`
-     - Start: `npm run start`
-     - Working directory: `frontend`
-   - Backend (Node.js):
-     - Install: `npm install`
-     - Start: `npm run start`
-     - Working directory: `backend`
-4. Thêm environment variables tương ứng (`PORT`, `CLIENT_ORIGIN`,...)
-5. Trỏ domain/subdomain theo kiến trúc bạn chọn:
-   - `app.domain.com` cho frontend
-   - `api.domain.com` cho backend
+Hostinger auto-detect Next.js từ `package.json` ở root.
 
-> Nếu gói Hostinger của bạn chỉ hỗ trợ 1 service, nên tách frontend/backend thành 2 app độc lập hoặc deploy backend qua VPS/Platform khác.
+1. Push code lên GitHub.
+2. Trong Hostinger → Git → Connect repo `block-blast`.
+3. Hostinger sẽ tự nhận ra Next.js framework.
+4. Build command: `npm run build` (mặc định).
+5. Start command: `npm run start` (mặc định).
 
-## 7) Hướng mở rộng cho game blockblast
+> Backend API deploy riêng nếu cần (VPS hoặc service khác).
 
-- Thêm engine game ở frontend:
-  - ma trận 9x9
-  - sinh block ngẫu nhiên
-  - drag/drop + snap logic
-  - clear hàng/cột/ô 3x3
-  - combo và score multiplier
-- Backend thêm:
-  - API lưu điểm (`POST /api/scores`)
-  - auth người chơi (nếu cần)
-  - chống spam submit score (rate limit + validation)
