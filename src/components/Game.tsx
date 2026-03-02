@@ -15,7 +15,9 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
+  type Modifier,
 } from "@dnd-kit/core";
+import { getEventCoordinates } from "@dnd-kit/utilities";
 import { RefreshCcw, Trophy } from "lucide-react";
 
 // --- Constants ---
@@ -23,6 +25,41 @@ const GRID_SIZE = 9;
 const CELL_SIZE = 30;
 const GAP = 3;
 const PADDING = 8;
+
+// --- Snap anchor modifier ---
+// Aligns the DragOverlay so the shape's anchor cell center is at the cursor position,
+// matching the preview calculation on the grid.
+const snapAnchorToCursor: Modifier = ({
+  activatorEvent,
+  draggingNodeRect,
+  active,
+  transform,
+}) => {
+  if (!activatorEvent || !draggingNodeRect || !active?.data?.current) return transform;
+
+  const shape = active.data.current.shape as number[][];
+  if (!shape) return transform;
+
+  const coords = getEventCoordinates(activatorEvent);
+  if (!coords) return transform;
+
+  const anchorR = Math.floor(shape.length / 2);
+  const anchorC = Math.floor(shape[0].length / 2);
+
+  // Anchor cell center position within the overlay element (no extra padding)
+  const anchorCenterX = anchorC * (CELL_SIZE + GAP) + CELL_SIZE / 2;
+  const anchorCenterY = anchorR * (CELL_SIZE + GAP) + CELL_SIZE / 2;
+
+  // Where cursor started within the source element
+  const grabOffsetX = coords.x - draggingNodeRect.left;
+  const grabOffsetY = coords.y - draggingNodeRect.top;
+
+  return {
+    ...transform,
+    x: transform.x + grabOffsetX - anchorCenterX,
+    y: transform.y + grabOffsetY - anchorCenterY,
+  };
+};
 
 // --- Types ---
 type Cell = number; // 0: empty, 1-8: color ID
@@ -66,7 +103,8 @@ const DraggableBlock = ({
   });
 
   const color = BLOCK_COLORS[colorId - 1];
-  const cellPx = isOverlay ? 30 : 24;
+  const cellPx = isOverlay ? CELL_SIZE : 24;
+  const gapPx = isOverlay ? GAP : 2;
 
   return (
     <div
@@ -74,7 +112,8 @@ const DraggableBlock = ({
       {...listeners}
       {...attributes}
       className={cn(
-        "touch-none select-none p-1 cursor-grab active:cursor-grabbing",
+        "touch-none select-none cursor-grab active:cursor-grabbing",
+        !isOverlay && "p-1",
         isDragging ? "opacity-0 scale-75" : "opacity-100 hover:scale-110 transition-transform duration-200"
       )}
       style={{ touchAction: "none", WebkitUserDrag: "none" } as React.CSSProperties}
@@ -83,7 +122,7 @@ const DraggableBlock = ({
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${shape[0].length}, ${cellPx}px)`,
-          gap: "2px",
+          gap: `${gapPx}px`,
           filter: isOverlay ? `drop-shadow(0 0 14px ${color.glow})` : undefined,
         }}
       >
@@ -622,7 +661,7 @@ export default function BlockBlastGame() {
         </div>
       </div>
 
-      <DragOverlay dropAnimation={null} zIndex={50}>
+      <DragOverlay dropAnimation={null} zIndex={50} modifiers={[snapAnchorToCursor]}>
         {activeDragId && activeDragShape ? (
           <DraggableBlock
             id={activeDragId}

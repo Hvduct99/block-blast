@@ -139,8 +139,8 @@ body {
 }
 
 @keyframes ghost-pulse {
-  0%, 100% { opacity: 0.15; }
-  50% { opacity: 0.25; }
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.4; }
 }
 
 .animate-cell-shatter {

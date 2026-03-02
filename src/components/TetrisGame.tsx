@@ -625,16 +625,18 @@ export default function TetrisGame() {
                           : isGhost
                           ? color!.gradient
                           : "rgba(15, 23, 42, 0.5)",
-                      opacity: isGhost ? 0.2 : 1,
+                      opacity: isGhost ? 0.3 : 1,
                       boxShadow:
                         cell > 0
                           ? `0 1px 4px ${color!.glow}, inset 0 1px 0 ${color!.light}30`
+                          : isGhost
+                          ? `0 0 6px ${color!.glow}`
                           : "none",
                       border:
                         cell > 0
                           ? `1px solid ${color!.light}35`
                           : isGhost
-                          ? `1px dashed ${color!.light}30`
+                          ? `1.5px dashed ${color!.light}50`
                           : "1px solid rgba(51, 65, 85, 0.2)",
                       transition: isClearing ? "none" : "all 0.08s ease",
                     }}
