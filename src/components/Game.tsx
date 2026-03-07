@@ -22,9 +22,9 @@ import { RefreshCcw, Trophy } from "lucide-react";
 
 // --- Constants ---
 const GRID_SIZE = 9;
-const CELL_SIZE = 30;
+const CELL_SIZE = 42;
 const GAP = 3;
-const PADDING = 8;
+const PADDING = 10;
 
 // --- Snap anchor modifier ---
 // Aligns the DragOverlay so the shape's anchor cell center is at the cursor position,
@@ -103,8 +103,8 @@ const DraggableBlock = ({
   });
 
   const color = BLOCK_COLORS[colorId - 1];
-  const cellPx = isOverlay ? CELL_SIZE : 24;
-  const gapPx = isOverlay ? GAP : 2;
+  const cellPx = isOverlay ? CELL_SIZE : 28;
+  const gapPx = isOverlay ? GAP : 3;
 
   return (
     <div
@@ -123,7 +123,7 @@ const DraggableBlock = ({
           display: "grid",
           gridTemplateColumns: `repeat(${shape[0].length}, ${cellPx}px)`,
           gap: `${gapPx}px`,
-          filter: isOverlay ? `drop-shadow(0 0 14px ${color.glow})` : undefined,
+          filter: isOverlay ? `drop-shadow(0 0 22px ${color.glow})` : undefined,
         }}
       >
         {shape.map((row, rIdx) =>
@@ -135,10 +135,10 @@ const DraggableBlock = ({
                 height: cellPx,
                 background: cell ? color.gradient : "transparent",
                 boxShadow: cell
-                  ? `0 2px 8px ${color.glow}, inset 0 1px 0 ${color.light}50, inset 0 -2px 0 ${color.dark}40`
+                  ? `0 3px 12px ${color.glow}, inset 0 2px 0 ${color.light}50, inset 0 -3px 0 ${color.dark}40`
                   : "none",
-                borderRadius: "4px",
-                border: cell ? `1px solid ${color.light}50` : "none",
+                borderRadius: "6px",
+                border: cell ? `1.5px solid ${color.light}60` : "none",
                 visibility: cell ? "visible" : ("hidden" as const),
               }}
             />
@@ -182,21 +182,21 @@ const DroppableCell = memo(function DroppableCell({
 
   if (filled) {
     bg = color!.gradient;
-    shadow = `0 2px 6px ${color!.glow}, inset 0 1px 0 ${color!.light}30, inset 0 -2px 0 ${color!.dark}30`;
-    border = `1px solid ${color!.light}40`;
+    shadow = `0 3px 10px ${color!.glow}, inset 0 2px 0 ${color!.light}40, inset 0 -3px 0 ${color!.dark}40`;
+    border = `1.5px solid ${color!.light}50`;
   } else if (isPreview && prevColor) {
     bg = previewValid
       ? `${prevColor.gradient.replace("145deg", "145deg")}`.replace(/100%\)$/, "60%)")
       : "rgba(239, 68, 68, 0.15)";
-    shadow = previewValid ? `0 0 8px ${prevColor.glow}` : "none";
-    border = previewValid ? `1px solid ${prevColor.light}40` : "1px solid rgba(239, 68, 68, 0.3)";
+    shadow = previewValid ? `0 0 12px ${prevColor.glow}` : "none";
+    border = previewValid ? `1.5px solid ${prevColor.light}50` : "1.5px solid rgba(239, 68, 68, 0.3)";
   }
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "rounded-sm",
+        "rounded-md",
         isClearing && "animate-cell-shatter",
         !filled && !isPreview && isOver && "ring-1 ring-white/20"
       )}
@@ -240,6 +240,11 @@ export default function BlockBlastGame() {
   const [floatingScores, setFloatingScores] = useState<FloatingScore[]>([]);
   const isAnimating = useRef(false);
 
+  // Combo state
+  const [combo, setCombo] = useState(0);
+  const [comboText, setComboText] = useState<string | null>(null);
+  const [shaking, setShaking] = useState(false);
+
   // Init
   useEffect(() => {
     generateNewShapes();
@@ -268,6 +273,9 @@ export default function BlockBlastGame() {
     setParticles([]);
     setFloatingScores([]);
     isAnimating.current = false;
+    setCombo(0);
+    setComboText(null);
+    setShaking(false);
     generateNewShapes();
   };
 
@@ -290,8 +298,8 @@ export default function BlockBlastGame() {
 
   // --- Sensors (FIXED for mobile) ---
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { distance: 8 } })
+    useSensor(MouseSensor, { activationConstraint: { distance: 3 } }),
+    useSensor(TouchSensor, { activationConstraint: { distance: 5 } })
   );
 
   // --- Drag handlers ---
@@ -378,21 +386,22 @@ export default function BlockBlastGame() {
   // --- Particle effects ---
   const spawnParticles = (cells: { row: number; col: number; colorId: number }[]) => {
     const newParticles: Particle[] = [];
+    const isCombo = combo >= 1;
     cells.forEach((cell) => {
       const color = BLOCK_COLORS[cell.colorId - 1];
       const cx = PADDING + cell.col * (CELL_SIZE + GAP) + CELL_SIZE / 2;
       const cy = PADDING + cell.row * (CELL_SIZE + GAP) + CELL_SIZE / 2;
-      const count = 4 + Math.floor(Math.random() * 4);
+      const count = isCombo ? 8 + Math.floor(Math.random() * 6) : 5 + Math.floor(Math.random() * 4);
       for (let i = 0; i < count; i++) {
         newParticles.push({
           id: `p-${cell.row}-${cell.col}-${i}-${Date.now()}`,
           x: cx,
           y: cy,
           color: Math.random() > 0.5 ? color.primary : color.particle,
-          dx: (Math.random() - 0.5) * 140,
-          dy: Math.random() * 80 + 20,
+          dx: (Math.random() - 0.5) * (isCombo ? 200 : 150),
+          dy: Math.random() * (isCombo ? 120 : 90) + 20,
           rotation: Math.random() * 720 - 360,
-          size: 3 + Math.random() * 7,
+          size: isCombo ? 4 + Math.random() * 10 : 3 + Math.random() * 8,
           delay: Math.random() * 120,
         });
       }
@@ -427,7 +436,27 @@ export default function BlockBlastGame() {
     }
 
     // Check and clear lines
-    const { clearedGrid, points, clearedCellsList } = clearLines(newGrid);
+    const { clearedGrid, points, clearedCellsList, linesCleared } = clearLines(newGrid);
+
+    // Combo tracking
+    let newCombo = combo;
+    let comboBonus = 0;
+    if (linesCleared > 0) {
+      newCombo = combo + 1;
+      if (newCombo >= 2) {
+        comboBonus = linesCleared * 50 * newCombo;
+        const labels = ["", "", "COMBO x2! 🔥", "COMBO x3! 💥", "COMBO x4! ⚡", "COMBO x5! 🌟"];
+        const label = newCombo < labels.length ? labels[newCombo] : `COMBO x${newCombo}! 🏆`;
+        setComboText(label);
+        setShaking(true);
+        setTimeout(() => setShaking(false), 500);
+        setTimeout(() => setComboText(null), 2000);
+      }
+    } else {
+      newCombo = 0;
+    }
+    setCombo(newCombo);
+    const totalPoints = points + comboBonus;
 
     if (clearedCellsList.length > 0) {
       isAnimating.current = true;
@@ -443,7 +472,7 @@ export default function BlockBlastGame() {
       const avgCol = Math.round(
         clearedCellsList.reduce((s, c) => s + c.col, 0) / clearedCellsList.length
       );
-      spawnFloatingScore(points, avgRow, avgCol);
+      spawnFloatingScore(totalPoints, avgRow, avgCol);
 
       setTimeout(() => {
         setGrid(clearedGrid);
@@ -454,7 +483,7 @@ export default function BlockBlastGame() {
       setGrid(newGrid);
     }
 
-    const newScore = score + points + 10;
+    const newScore = score + totalPoints + 10;
     setScore(newScore);
     if (newScore > bestScore) {
       setBestScore(newScore);
@@ -476,6 +505,7 @@ export default function BlockBlastGame() {
     clearedGrid: Grid;
     points: number;
     clearedCellsList: { row: number; col: number; colorId: number }[];
+    linesCleared: number;
   } => {
     const rowsToClear: number[] = [];
     const colsToClear: number[] = [];
@@ -514,7 +544,7 @@ export default function BlockBlastGame() {
 
     const linesCleared = rowsToClear.length + colsToClear.length;
     const points = linesCleared * 100 * (linesCleared > 1 ? linesCleared : 1);
-    return { clearedGrid: newGrid, points, clearedCellsList };
+    return { clearedGrid: newGrid, points, clearedCellsList, linesCleared };
   };
 
   // --- Game Over check ---
@@ -541,7 +571,7 @@ export default function BlockBlastGame() {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="game-container flex flex-col items-center gap-4 w-full max-w-md mx-auto px-2">
+      <div className={cn("game-container flex flex-col items-center gap-4 w-full max-w-lg mx-auto px-2", shaking && "animate-screen-shake")}>
         {/* Score Header */}
         <div className="flex w-full justify-between rounded-xl bg-slate-800/80 p-4 shadow-lg border border-slate-700/50 backdrop-blur-sm">
           <div className="flex flex-col">
@@ -549,6 +579,11 @@ export default function BlockBlastGame() {
               Score
             </span>
             <span className="text-2xl font-bold text-white tabular-nums">{score}</span>
+            {combo >= 2 && (
+              <span className="text-xs font-bold text-orange-400 animate-pulse">
+                🔥 Combo x{combo}
+              </span>
+            )}
           </div>
           <button
             onClick={restartGame}
@@ -627,11 +662,32 @@ export default function BlockBlastGame() {
               className="absolute pointer-events-none animate-score-float"
               style={{ left: fs.x, top: fs.y, zIndex: 20 }}
             >
-              <span className="text-2xl font-extrabold text-yellow-300 drop-shadow-[0_2px_8px_rgba(250,204,21,0.8)]">
+              <span className={cn(
+                "font-extrabold drop-shadow-[0_2px_8px_rgba(250,204,21,0.8)]",
+                fs.score >= 400
+                  ? "text-4xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-yellow-400 to-orange-500"
+                  : fs.score >= 200
+                    ? "text-3xl text-yellow-300"
+                    : "text-2xl text-yellow-300"
+              )}>
                 +{fs.score}
               </span>
             </div>
           ))}
+
+          {/* Combo Display */}
+          {comboText && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[25]">
+              <div className="animate-combo-burst text-center">
+                <span
+                  className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-orange-400 to-red-500"
+                  style={{ textShadow: "0 0 30px rgba(250,204,21,0.6), 0 0 60px rgba(249,115,22,0.4)" }}
+                >
+                  {comboText}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Game Over */}
           {isGameOver && (
@@ -652,9 +708,9 @@ export default function BlockBlastGame() {
         </div>
 
         {/* Shapes Tray */}
-        <div className="flex w-full items-center justify-center gap-2 py-2 min-h-[90px]">
+        <div className="flex w-full items-center justify-center gap-3 py-3 min-h-[110px]">
           {shapes.map((item) => (
-            <div key={item.id} className="flex items-center justify-center flex-1 max-w-[120px]">
+            <div key={item.id} className="flex items-center justify-center flex-1 max-w-[160px]">
               <DraggableBlock id={item.id} shape={item.shape} colorId={item.colorId} />
             </div>
           ))}
