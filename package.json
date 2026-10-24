@@ -1,0 +1,20 @@
+{
+  "name": "ta-ton-truyen-ky",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Tạ Tốn Truyền Kỳ - game nhập vai võ hiệp 2D chạy hoàn toàn trên trình duyệt (Vite + Three.js + Tailwind CSS)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.5"
+  }
+}

@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0a0714;
+  --color-parchment: #f3e8d2;
+  --color-gold: #ffcf5a;
+  --color-jade: #4fd18b;
+  --font-serif: "Noto Serif", Georgia, "Times New Roman", serif;
+}
+
+@layer components {
+  .field {
+    @apply w-full rounded-lg border border-white/15 bg-black/35 px-3 py-2.5 text-parchment placeholder:text-parchment/35 outline-none transition focus:border-gold/70 focus:ring-2 focus:ring-gold/25;
+  }
+  .tab[aria-selected="true"] {
+    @apply bg-gold/90 text-[#2a1606] shadow;
+  }
+  .tab[aria-selected="false"] {
+    @apply text-parchment/70 hover:text-parchment;
+  }
+}

@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#06040a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tạ Tốn">
+<script>(function(){var q=location.search,t=('ontouchstart' in window)||navigator.maxTouchPoints>0,c=window.matchMedia&&matchMedia('(pointer:coarse)').matches,m=/[?&]mobile=1/.test(q)||(!/[?&]mobile=0/.test(q)&&(c||(t&&Math.min(screen.width,screen.height)<820)));window.TT_MOBILE=m;if(m)document.documentElement.classList.add('mobile');})();</script>
+<title>Tạ Tốn Truyền Kỳ - Ỷ Thiên Đồ Long Ký</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%90%AF%3C/text%3E%3C/svg%3E">
+<script type="module" src="/src/play.js"></script>
+</head>
+<body class="game-page">
+<header class="topbar slim">
+  <b class="brand">🐯 TẠ TỐN TRUYỀN KỲ</b>
+  <span id="meInfo" class="meinfo">Đang tải...</span>
+  <span class="grow"></span>
+  <button class="btn small" id="btnMap" type="button">🗺️ Bản đồ [M]</button>
+  <button class="btn small ghost" id="btnMusic" type="button" title="Nhạc nền">🎵 Nhạc</button>
+  <button class="btn small ghost" id="btnSfx" type="button" title="Âm thanh">🔊 Âm thanh</button>
+  <button class="btn small ghost" id="btnFull" type="button" title="Toàn màn hình">⛶ Toàn màn hình</button>
+  <a class="btn small blue" id="btnAdmin" href="#" hidden>👑 Quản trị</a>
+  <a class="btn small" id="btnAuth" href="index.html?logout=1">Thoát</a>
+</header>
+
+<main class="game-shell">
+  <div id="stageWrap" class="stage-wrap">
+    <canvas id="game" width="1280" height="720"></canvas>
+
+    <!-- chat + nhat ky (goc trai duoi) -->
+    <div class="chat-dock" id="chatDock">
+      <div id="battleLog" class="log"></div>
+      <div id="chatBox" class="chatbox"></div>
+      <div class="chat-row">
+        <button class="cbtn" data-c="map" type="button">Bản đồ</button><button class="cbtn on" data-c="world" type="button">Thế giới</button><button class="cbtn" data-c="guild" type="button">Bang</button><button class="cbtn" data-c="private" type="button">Riêng</button>
+        <input id="chatTo" placeholder="ID" hidden><span id="chatToName" class="chat-to" hidden></span>
+      </div>
+      <div class="chat-in"><input id="chatIn" placeholder="Enter để trò chuyện..." maxlength="300"><button id="chatSendBtn" class="cbtn send" type="button">Gửi</button></div>
+    </div>
+
+    <!-- thanh phim tat (goc phai duoi) -->
+    <div class="hotbar" id="hotbar">
+      <button type="button" data-win="char" data-ico="ui_char" title="Nhân vật" data-name="Nhân vật"><kbd>C</kbd></button>
+      <button type="button" data-win="bag" data-ico="ui_bag" title="Hành trang" data-name="Hành trang"><kbd>B</kbd></button>
+      <button type="button" data-win="quest" data-ico="ui_quest" title="Nhiệm vụ" data-name="Nhiệm vụ"><kbd>N</kbd></button>
+      <button type="button" data-act="openmap" data-ico="ui_worldmap" title="Bản đồ" data-name="Bản đồ"><kbd>M</kbd></button>
+      <button type="button" data-win="shop" data-ico="ui_shop" title="Tiệm" data-name="Tiệm"><kbd>H</kbd></button>
+      <button type="button" data-win="forge" data-ico="ui_enhance" title="Lò rèn / Cường hóa" data-name="Lò rèn"><kbd>O</kbd></button>
+      <button type="button" data-win="farm" data-ico="ui_farm" title="Nông trại" data-name="Nông trại"><kbd>U</kbd></button>
+      <button type="button" data-win="guild" data-ico="ui_guild" title="Bang hội" data-name="Bang hội"><kbd>G</kbd></button>
+      <button type="button" data-win="pk" data-ico="ui_pk" title="Tỷ võ (PK)" data-name="Tỷ võ"><kbd>K</kbd></button>
+      <button type="button" data-win="rank" data-ico="ui_rank" title="Bảng xếp hạng" data-name="Xếp hạng"><kbd>I</kbd></button>
+      <button type="button" data-win="social" data-ico="ui_talk" title="Bạn bè · Giao dịch · Thách đấu" data-name="Bạn bè"><kbd>V</kbd></button>
+    </div>
+
+    <div id="pmBar" class="pm-bar"></div>
+    <div id="pmenu" class="pmenu" hidden></div>
+    <div id="ovTrade" class="ov" hidden><div class="ov-box trade-box" id="tradeBox"></div></div>
+
+    <div id="ovSect" class="ov" hidden>
+      <div class="ov-box sect-box cc-box">
+        <h2>⛩ Bái Nhập Môn Phái</h2>
+        <p class="sub">Đạt cấp 25: chọn 1 trong 16 đại môn phái để lĩnh ngộ toàn bộ tuyệt học môn phái (mở khóa tuyệt kỹ T và Y) và nhận thêm chỉ số. Phái khắc chế nhau khi PK.</p>
+        <div class="cc-wrap">
+          <div class="cc-left" id="ccLeft"></div>
+          <div class="cc-mid"><div id="sectGrid" class="sect-grid cc-grid"></div><p class="sub cc-legend"><span class="ok">■</span> phái đang chọn khắc chế · <span class="warn">■</span> khắc chế phái đang chọn</p></div>
+          <div class="cc-right sect-detail" id="sectDetail"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ovHome" class="ov home-ov" hidden><div class="ov-box home-box" id="homeBox"></div></div>
+
+    <div id="ovMap" class="ov" hidden>
+      <div class="ov-box map-box">
+        <button class="win-x" id="mapClose" type="button" data-act="mapclose" hidden>✕</button>
+        <h2>倚天屠龍記 · Bản Đồ Giang Hồ</h2>
+        <p class="sub" id="mapSub"></p>
+        <div class="wmap-wrap"><canvas id="wmap" width="1200" height="560"></canvas></div>
+        <div id="mapDetail" class="map-detail" hidden></div>
+        <details class="map-list"><summary>📜 Danh sách 30 bản đồ</summary><div id="mapGrid" class="map-grid"></div></details>
+      </div>
+    </div>
+
+    <div id="ovWin" class="ov" hidden>
+      <div class="ov-box win-box">
+        <div class="win-head">
+          <div class="tabs" id="tabs">
+            <button class="tab active" data-t="char" data-ico="ui_char" type="button">Nhân vật <kbd>C</kbd></button>
+            <button class="tab" data-t="bag" data-ico="ui_bag" type="button">Hành trang <kbd>B</kbd></button>
+            <button class="tab" data-t="quest" data-ico="ui_quest" type="button">Nhiệm vụ <kbd>N</kbd></button>
+            <button class="tab" data-t="shop" data-ico="ui_shop" type="button">Tiệm <kbd>H</kbd></button>
+            <button class="tab" data-t="forge" data-ico="ui_enhance" type="button">Lò rèn <kbd>O</kbd></button>
+            <button class="tab" data-t="farm" data-ico="ui_farm" type="button">Nông trại <kbd>U</kbd></button>
+            <button class="tab" data-t="guild" data-ico="ui_guild" type="button">Bang hội <kbd>G</kbd></button>
+            <button class="tab" data-t="pk" data-ico="ui_pk" type="button">Tỷ võ <kbd>K</kbd></button>
+            <button class="tab" data-t="rank" data-ico="ui_rank" type="button">BXH <kbd>I</kbd></button>
+            <button class="tab" data-t="social" data-ico="ui_talk" type="button">Bạn bè <kbd>V</kbd></button>
+          </div>
+          <button class="win-x" type="button" data-act="winclose" title="Đóng (Esc)">✕</button>
+        </div>
+        <div class="win-body">
+          <div id="p-char" class="panel active"></div>
+          <div id="p-bag" class="panel"></div>
+          <div id="p-quest" class="panel"></div>
+          <div id="p-shop" class="panel"></div>
+          <div id="p-forge" class="panel"></div>
+          <div id="p-farm" class="panel"></div>
+          <div id="p-guild" class="panel"></div>
+          <div id="p-pk" class="panel"></div>
+          <div id="p-rank" class="panel"></div>
+          <div id="p-social" class="panel"></div>
+          <div class="online-wrap"><h4>Người chơi cùng bản đồ</h4><div id="onlineBox" class="small-text"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ovDialog" class="ov ov-bottom" hidden>
+      <div class="dlg">
+        <div class="dlg-name" id="dlgName"></div>
+        <div class="dlg-text" id="dlgText"></div>
+        <div class="dlg-foot"><small>Space / Enter / chạm để tiếp tục</small><button class="btn small ghost" id="dlgSkip" type="button">Bỏ qua ▸▸</button></div>
+      </div>
+    </div>
+
+    <div id="ovNpc" class="ov" hidden><div class="ov-box npc-box" id="npcBox"></div></div>
+    <div id="ovResult" class="ov" hidden><div class="ov-box" id="resultBox"></div></div>
+
+    <div id="ovPause" class="ov" hidden>
+      <div class="ov-box small-box">
+        <h2>Tạm dừng</h2>
+        <button class="btn" id="btnResume" type="button">▶ Tiếp tục</button>
+        <button class="btn red" id="btnLeave" type="button">🏠 Về màn hình nhân vật</button>
+        <div class="pause-extra"><button class="btn ghost" type="button" data-proxy="btnMusic">🎵 Nhạc</button><button class="btn ghost" type="button" data-proxy="btnSfx">🔊 Âm thanh</button><button class="btn ghost" type="button" data-proxy="btnFull">⛶ Toàn màn hình</button><button class="btn ghost" type="button" data-proxy="btnAdmin" id="pxAdmin" hidden>👑 Quản trị</button><button class="btn ghost" type="button" data-proxy="btnAuth">🚪 Thoát game</button></div>
+        <div class="touch-help"><p>◀ ▶ <b>Kéo cần gạt</b> bên trái để chạy, kéo xuống để xuống bệ.</p><p><b>斬 Đánh</b> giữ để đánh liên tục · <b>⤒ Nhảy</b> chạm 2 lần để nhảy đôi, đeo cánh thì <b>giữ</b> để bay · <b>» Lướt</b> né đòn.</p><p>Các nút tuyệt học có tên bên dưới, vòng tối là thời gian hồi chiêu. Chạm vào người chơi khác để trò chuyện, giao dịch, thách đấu.</p></div>
+        <div class="keys-help">
+          <p><kbd>←</kbd><kbd>→</kbd> chạy · <kbd>↑</kbd>/<kbd>Space</kbd> nhảy (2 lần) · <kbd>↓</kbd> xuống bệ · <kbd>Shift</kbd>/<kbd>L</kbd> lướt</p>
+          <p><kbd>A</kbd> đánh thường · <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd><kbd>T</kbd><kbd>Y</kbd> tuyệt học · <kbd>1</kbd><kbd>2</kbd> thuốc · <kbd>F</kbd> người giao nhiệm vụ · <kbd>P</kbd>/<kbd>Esc</kbd> tạm dừng</p>
+          <p><kbd>C</kbd> nhân vật · <kbd>B</kbd> hành trang · <kbd>N</kbd> nhiệm vụ · <kbd>M</kbd> bản đồ · <kbd>H</kbd> tiệm · <kbd>O</kbd> lò rèn · <kbd>U</kbd> nông trại · <kbd>G</kbd> bang · <kbd>K</kbd> tỷ võ (PK) · <kbd>I</kbd> BXH · <kbd>V</kbd> bạn bè/giao dịch · đeo cánh: nhảy 2 lần rồi <b>giữ phím nhảy để bay</b> · <kbd>Enter</kbd> trò chuyện · bấm chuột vào người chơi: trò chuyện riêng, giao dịch, thách đấu, kết bạn</p>
+        </div>
+        <details class="credits-box"><summary>Ghi công tác giả hình ảnh &amp; âm nhạc</summary>
+          <p>Nhân vật: Segel, pzUH · Nền: ansimuz, pwl · Cánh: OpenGameArt · Quái vật: ansimuz (Gothicvania, Sunny Land, Grotto Escape II - CC0) · Nhạc: OpenGameArt · Biểu tượng: game-icons.net (Lorc, Delapouite, Skoll, Faithtoken, Willdabeast, Carl Olsen, Darkzaitzev, Sbed, Caro Asercion). Cảm ơn các tác giả đã chia sẻ miễn phí.</p>
+        </details>
+      </div>
+    </div>
+
+    <!-- dien thoai: can gat + cum nut chieu (chi hien o che do cam ung) -->
+    <div id="touch" class="touch" hidden>
+      <div class="joy" id="joy"><div class="joy-base" id="joyBase"><div class="joy-knob" id="joyKnob"></div><span class="joy-l">◀</span><span class="joy-r">▶</span><span class="joy-d">▼</span></div></div>
+      <div class="tc-top">
+        <button type="button" class="tc-mini" id="tcQuest"><span class="tc-ico" data-tico="ui_quest"></span><small>Nhiệm vụ</small></button>
+        <button type="button" class="tc-mini" id="tcMenu"><span class="tc-ico">☰</span><small>Menu</small></button>
+        <button type="button" class="tc-mini" id="tcChat"><span class="tc-ico">💬</span><small>Trò chuyện</small><i class="tc-badge" id="tcChatBadge" hidden></i></button>
+        <button type="button" class="tc-mini" id="tcPause"><span class="tc-ico">❚❚</span><small>Tạm dừng</small></button>
+      </div>
+      <div class="tc-act">
+        <button data-a="atk" class="tb tb-atk" type="button"><b>斬</b><small>Đánh</small></button>
+        <button data-a="jump" class="tb tb-jump" type="button"><b>⤒</b><small>Nhảy</small></button>
+        <button data-a="dash" class="tb tb-dash" type="button"><b>»</b><small>Lướt</small></button>
+        <button data-a="talk" class="tb tb-talk" type="button" hidden><b>💬</b><small>Nói chuyện</small></button>
+        <div class="tc-sk" id="tcSkills">
+          <button data-a="tt" class="tb sk" type="button"></button><button data-a="sth" class="tb sk" type="button"></button><button data-a="dl" class="tb sk" type="button"></button>
+          <button data-a="cd" class="tb sk" type="button"></button><button data-a="ult" class="tb sk" type="button"></button><button data-a="vx" class="tb sk" type="button"></button>
+        </div>
+        <div class="tc-pot">
+          <button data-a="hp" class="tb pot" type="button"><span class="tc-ico" data-tico="binh_hp"></span><em id="tcHp">0</em><small>Máu</small><i class="cdm"></i></button>
+          <button data-a="mpp" class="tb pot" type="button"><span class="tc-ico" data-tico="binh_mp"></span><em id="tcMp">0</em><small>Nội lực</small><i class="cdm"></i></button>
+        </div>
+      </div>
+    </div>
+    <div id="rotateHint" class="rotate-hint"><div><b>📱↻</b><p>Xoay ngang điện thoại để chơi</p><small>Mẹo: thêm trang vào màn hình chính để chơi toàn màn hình</small></div></div>
+  </div>
+</main>
+<div id="toasts" class="toasts"></div>
+
+</body>
+</html>

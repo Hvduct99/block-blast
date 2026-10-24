@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0714">
+<meta name="description" content="Tạ Tốn Truyền Kỳ - game nhập vai võ hiệp 2D Ỷ Thiên Đồ Long Ký, chơi ngay trên trình duyệt.">
+<title>Tạ Tốn Truyền Kỳ - Đăng nhập</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%90%AF%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;600;800&display=swap" rel="stylesheet">
+<script type="module" src="/src/login.js"></script>
+</head>
+<body class="min-h-dvh bg-ink text-parchment font-serif antialiased overflow-x-hidden">
+  <canvas id="bg3d" class="fixed inset-0 -z-10 h-full w-full" aria-hidden="true"></canvas>
+
+  <main class="relative mx-auto flex min-h-dvh max-w-6xl flex-col items-center justify-center gap-8 px-4 py-10 lg:flex-row lg:justify-between lg:gap-16">
+    <!-- tieu de -->
+    <section class="max-w-xl text-center lg:text-left">
+      <p class="tracking-[0.5em] text-gold/80 text-lg sm:text-2xl">倚天屠龍記</p>
+      <h1 class="mt-2 text-4xl font-extrabold leading-tight sm:text-6xl">
+        <span class="bg-gradient-to-b from-[#fff2c4] via-gold to-[#b8741e] bg-clip-text text-transparent drop-shadow-[0_2px_18px_rgba(255,190,80,.35)]">Tạ Tốn<br class="hidden sm:block"> Truyền Kỳ</span>
+      </h1>
+      <p class="mt-4 text-base text-parchment/80 sm:text-lg">Kim Mao Sư Vương xông pha giang hồ: 30 bản đồ nối liền, 16 môn phái, Boss bản đồ, cường hóa trang bị, nông trại, bang hội.</p>
+      <ul class="mt-6 flex flex-wrap justify-center gap-2 text-sm lg:justify-start">
+        <li class="rounded-full border border-gold/30 bg-white/5 px-3 py-1">⚔️ 7 tuyệt học</li>
+        <li class="rounded-full border border-gold/30 bg-white/5 px-3 py-1">⛩ 16 môn phái</li>
+        <li class="rounded-full border border-gold/30 bg-white/5 px-3 py-1">🔨 Cường hóa +15</li>
+        <li class="rounded-full border border-gold/30 bg-white/5 px-3 py-1">📱 Chơi trên điện thoại</li>
+      </ul>
+    </section>
+
+    <!-- dang nhap -->
+    <section class="w-full max-w-md rounded-2xl border border-gold/25 bg-[#120c1d]/75 p-6 shadow-[0_20px_80px_-20px_rgba(0,0,0,.8)] backdrop-blur-md sm:p-8">
+      <div id="loggedBox" class="mb-6 hidden rounded-xl border border-jade/40 bg-jade/10 p-4">
+        <p class="text-sm">Đã đăng nhập: <b id="loggedName" class="text-gold"></b></p>
+        <a href="play.html" class="mt-3 block rounded-lg bg-gradient-to-b from-[#5fd38a] to-[#2b8a52] py-3 text-center font-bold text-white shadow-lg transition hover:brightness-110">▶ Vào game</a>
+      </div>
+
+      <div class="mb-5 grid grid-cols-2 rounded-lg bg-black/30 p-1 text-sm font-semibold" role="tablist">
+        <button type="button" data-tab="login" class="tab rounded-md py-2 transition" role="tab">Đăng nhập</button>
+        <button type="button" data-tab="register" class="tab rounded-md py-2 transition" role="tab">Đăng ký</button>
+      </div>
+
+      <form id="authForm" class="space-y-3" novalidate>
+        <label class="block">
+          <span class="mb-1 block text-xs uppercase tracking-wider text-parchment/60">Tên đăng nhập</span>
+          <input id="username" autocomplete="username" maxlength="50" required placeholder="chữ không dấu, số, _ ." class="field">
+        </label>
+        <label class="block">
+          <span class="mb-1 block text-xs uppercase tracking-wider text-parchment/60">Mật khẩu</span>
+          <input id="password" type="password" autocomplete="current-password" required placeholder="từ 4 ký tự" class="field">
+        </label>
+        <label id="nickRow" class="hidden">
+          <span class="mb-1 block text-xs uppercase tracking-wider text-parchment/60">Biệt danh trong game</span>
+          <input id="nickname" maxlength="30" placeholder="để trống = dùng tên đăng nhập" class="field">
+        </label>
+        <button id="submitBtn" type="submit" class="w-full rounded-lg bg-gradient-to-b from-[#ffd76a] to-[#c8861e] py-3 font-bold text-[#2a1606] shadow-lg transition hover:brightness-110 disabled:opacity-60">Đăng nhập</button>
+        <p id="msg" class="min-h-5 text-center text-sm" role="status" aria-live="polite"></p>
+      </form>
+
+      <div id="accBox" class="mt-2 hidden">
+        <p class="mb-2 text-xs uppercase tracking-wider text-parchment/60">Tài khoản trên máy này</p>
+        <div id="accList" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <details class="mt-6 rounded-lg border border-white/10 bg-black/20 p-3 text-sm">
+        <summary class="cursor-pointer select-none text-parchment/80">💾 Sao lưu / khôi phục dữ liệu</summary>
+        <p class="mt-2 text-parchment/60">Tài khoản và tiến trình được lưu ngay trong trình duyệt này. Hãy tải bản sao lưu để chuyển sang máy khác hoặc phòng khi xóa dữ liệu trình duyệt.</p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button id="btnExport" type="button" class="rounded-md border border-gold/40 px-3 py-2 hover:bg-gold/10">⬇ Tải bản sao lưu</button>
+          <label class="cursor-pointer rounded-md border border-gold/40 px-3 py-2 hover:bg-gold/10">⬆ Khôi phục từ tệp<input id="fileImport" type="file" accept="application/json,.json" class="hidden"></label>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer class="relative pb-6 text-center text-xs text-parchment/40">Hình ảnh &amp; âm nhạc CC0 từ OpenGameArt, ansimuz, game-icons.net · Xây dựng với Vite + Three.js + Tailwind CSS</footer>
+</body>
+</html>

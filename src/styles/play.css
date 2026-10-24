@@ -1,0 +1,5 @@
+/* Trang game: Tailwind (khong preflight de khong pha giao dien game cu) + style game */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "./game.css";

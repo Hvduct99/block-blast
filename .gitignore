@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.vite/
+*.log
+.DS_Store
+Thumbs.db
+
+# Ma nguon PHP cu: chua mat khau MySQL + Pusher secret -> KHONG BAO GIO dua len GitHub
+legacy-php/
