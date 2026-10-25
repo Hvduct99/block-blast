@@ -25,6 +25,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_BACKEND: local # GitHub Pages khong co may chu -> ban choi mot minh, luu trong trinh duyet
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -6,6 +6,8 @@ import { resolve } from 'node:path';
 export default defineConfig({
   base: './',
   plugins: [tailwindcss()],
+  // npm run dev: chuyen api/*.php sang may chu Node (npm run dev:server, cong 3000)
+  server: { proxy: { '/api': 'http://localhost:3000' } },
   build: {
     outDir: 'dist',
     assetsDir: 'static',

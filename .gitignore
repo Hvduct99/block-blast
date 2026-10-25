@@ -7,3 +7,6 @@ Thumbs.db
 
 # Ma nguon PHP cu: chua mat khau MySQL + Pusher secret -> KHONG BAO GIO dua len GitHub
 legacy-php/
+
+# Bien moi truong may chu (mat khau DB, Pusher secret)
+.env

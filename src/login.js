@@ -1,11 +1,11 @@
-// login.js - trang dang nhap / dang ky (thay index.php). Tai khoan luu cuc bo qua src/server/api.js
+// login.js - trang dang nhap / dang ky (thay index.php). Tai khoan tren may chu (MySQL), hoac luu cuc bo khi build VITE_BACKEND=local
 import './styles/login.css';
-import './data/equip.js'; // dang ky tang Dao Thuong -> can bang trang bi
-import { handle } from './server/api.js';
-import { exportData, importData } from './server/db.js';
+import './data/equip.js'; // ban cuc bo: dang ky tang Dao Thuong -> can bang trang bi
+import { api, ONLINE } from './boot-server.js';
+import { exportData, importData } from './offline/db.js';
 
 const $ = id => document.getElementById(id);
-const call = async (action, data) => (await handle('api/auth.php?action=' + action, data)).data;
+const call = async (action, data) => (await api('api/auth.php?action=' + action, data)).data;
 let mode = 'login';
 
 function setMsg(text, kind) {
@@ -25,6 +25,7 @@ async function refresh() {
   const me = await call('me');
   $('loggedBox').classList.toggle('hidden', !me.ok);
   if (me.ok) $('loggedName').textContent = me.user.nickname;
+  if (ONLINE) return; // danh sach tai khoan / sao luu chi co o ban cuc bo
   const acc = (await call('accounts')).list || [];
   $('accBox').classList.toggle('hidden', !acc.length);
   $('accList').innerHTML = '';
@@ -62,6 +63,7 @@ $('fileImport').onchange = async e => {
 };
 
 if (new URLSearchParams(location.search).has('logout')) { await call('logout'); history.replaceState(null, '', location.pathname); }
+if (ONLINE) $('backupBox').remove();
 setMode('login');
 refresh();
 

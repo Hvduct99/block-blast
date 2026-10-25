@@ -1,4 +1,4 @@
-// backend.js - cau noi giua game va "may chu" (src/server/api.js, giu nguyen giao dien api/*.php cu). Du lieu luu trong trinh duyet.
+// backend.js - cau noi giua game va may chu (server/ Node + MySQL, giu nguyen giao dien api/*.php cu). May chu tinh thuong/roi do.
 (function () {
   'use strict';
   const EQ = window.TATON_EQUIP || { items: [], slots: [], enhance: { max: 15, pct: 8, gold: [], iron: [], rate: [], dropFrom: 7 }, holes: { max: {}, gold: [], tool: [] }, merge: { need: 3, goldPerTier: 200, maxTier: 6 }, unlayGoldPerTier: 500, exchange: 200, legacy: [] };
@@ -79,13 +79,13 @@
     return 1;
   }
 
-  // Ban tinh (GitHub Pages): "may chu" chay ngay trong trinh duyet - src/server/api.js (window.LocalServer)
+  // window.TT_API (src/boot-server.js): may chu Node that, hoac may chu gia lap trong trinh duyet khi build VITE_BACKEND=local
   async function req(url, data) {
     try {
-      const r = await window.LocalServer.handle(url, data);
-      if (r.status === 401) { setTimeout(() => { location.href = 'index.html'; }, 1500); }
+      const r = await window.TT_API(url, data);
+      if (r.status === 401 || (r.data && r.data.banned)) { setTimeout(() => { location.href = 'index.html'; }, 1500); }
       return r.data;
-    } catch (e) { console.error(e); return { ok: false, error: 'Lỗi xử lý dữ liệu' }; }
+    } catch (e) { return { ok: false, error: 'Mất kết nối máy chủ' }; }
   }
   function normUser(u) {
     if (!u) return null;

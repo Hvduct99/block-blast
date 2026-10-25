@@ -2,18 +2,36 @@
 
 Game nhập vai võ hiệp 2D (Ỷ Thiên Đồ Long Ký) chạy hoàn toàn trên trình duyệt: 30 bản đồ, 16 môn phái, Boss bản đồ, cường hóa / đục sao / khảm đá, nông trại, bang hội, nhiệm vụ NPC.
 
-**Công nghệ:** Node.js + [Vite](https://vite.dev) · [Three.js](https://threejs.org) (nền 3D trang đăng nhập) · [Tailwind CSS v4](https://tailwindcss.com) · engine game Canvas 2D.
+**Công nghệ:** Node.js (Express + MySQL + Pusher) · [Vite](https://vite.dev) · [Three.js](https://threejs.org) (nền 3D trang đăng nhập) · [Tailwind CSS v4](https://tailwindcss.com) · engine game Canvas 2D.
 
 ## Chạy trên máy
 
 ```bash
 npm install
-npm run dev       # http://localhost:5173
-npm run build     # xuất bản tĩnh vào dist/
-npm run preview   # xem thử bản build
+cp .env.example .env   # điền thông tin MySQL + Pusher
+npm run build
+npm start              # http://localhost:3000
 ```
 
-## Deploy lên GitHub Pages
+Khi sửa giao diện: chạy `npm run dev:server` và `npm run dev` song song (Vite chuyển `/api` sang cổng 3000).
+
+## Deploy lên Hostinger (chơi nhiều người)
+
+hPanel → Websites → **Node.js Web App** → kết nối repo GitHub, cài đặt:
+
+| Mục | Giá trị |
+|---|---|
+| Framework preset | Express / Other |
+| Node version | 20 trở lên (khuyên dùng 22) |
+| Build command | `npm run build` |
+| Start command / Entry file | `npm start` / `server/index.js` |
+| Output directory | `dist` |
+
+**Environment variables** (không ghi vào mã nguồn): `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER`, `PUSHER_PREFIX`, `SESSION_SECRET` (xem [.env.example](.env.example)).
+
+Máy chủ tự tạo bảng còn thiếu và nạp bản đồ / công thức rèn mỗi lần khởi động, dùng được luôn database MySQL của bản PHP cũ (tài khoản cũ đăng nhập bình thường). Kiểm tra kết nối DB: `/api/health`.
+
+## Deploy lên GitHub Pages (bản chơi một mình)
 
 1. Đẩy mã lên nhánh `main` của repo.
 2. Trên GitHub: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
@@ -28,10 +46,15 @@ index.html            Trang đăng nhập / đăng ký (Tailwind + nền Three.j
 play.html             Trang game
 public/assets/        Ảnh sprite, nền, nhạc (phục vụ nguyên trạng)
 src/
+  boot-server.js      Chọn máy chủ: Node thật (mặc định) hoặc giả lập (VITE_BACKEND=local)
   login.js            Logic đăng nhập, sao lưu / khôi phục dữ liệu
   play.js             Điểm vào trang game
   three/scene.js      Cảnh 3D: núi thủy mặc, trăng, Đồ Long Đao, tàn lửa
-  server/             "Máy chủ" chạy trong trình duyệt (thay cho PHP + MySQL cũ)
+server/               Máy chủ Node: Express + MySQL + Pusher (port từ api/*.php cũ, giữ nguyên đường dẫn API)
+  api/                game/auth/loot/quest/farm/forge · equip/pk/social/friend · rt (bản đồ chung) + xác thực Pusher
+  schema.js           Tạo bảng / nâng cấp DB (thay install.php)
+src/
+  offline/            "Máy chủ" giả lập trong trình duyệt cho bản GitHub Pages (VITE_BACKEND=local)
     api.js            Các endpoint api/*.php cũ: auth, game, equip, forge, farm, quest, loot, social, friend, pk
     rules.js          Luật game: cấp độ, rơi đồ, chỉ số chiến đấu, PK
     db.js             Lưu trữ localStorage (mỗi yêu cầu là một transaction)
@@ -42,8 +65,8 @@ src/
 
 ## Lưu ý
 
-- GitHub Pages chỉ phục vụ file tĩnh, nên dữ liệu người chơi được lưu **trong trình duyệt** (localStorage). Dùng mục *Sao lưu / khôi phục dữ liệu* ở trang đăng nhập để chuyển sang máy khác.
-- Các tính năng nhiều người thời gian thực của bản PHP (bản đồ chung qua Pusher, PK trên bản đồ, chat thế giới giữa các máy) cần máy chủ thật nên không có ở bản tĩnh; game chạy ở chế độ đánh một mình. Bạn bè / giao dịch / thách đấu vẫn dùng được giữa các tài khoản trên cùng trình duyệt.
+- Bản Hostinger (máy chủ Node): bản đồ chung thời gian thực, PK, chat, bạn bè, giao dịch, bang hội giữa mọi người chơi.
+- Bản GitHub Pages chỉ là file tĩnh: dữ liệu lưu **trong trình duyệt**, chơi một mình (có sao lưu / khôi phục ở trang đăng nhập).
 
 ## Ghi công
 
