@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node server/index.js",
+    "start": "node app.cjs",
     "dev:server": "node --watch server/index.js"
   },
   "dependencies": {
@@ -27,5 +27,6 @@
   },
   "engines": {
     "node": ">=20.12"
-  }
+  },
+  "main": "app.cjs"
 }

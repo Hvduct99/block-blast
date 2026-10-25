@@ -1,11 +1,12 @@
 // config.js - cau hinh may chu doc tu bien moi truong (hPanel Hostinger -> Environment variables, hoac file .env khi chay may rieng).
 // KHONG ghi mat khau / secret vao ma nguon.
 import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-export const ROOT = resolve(import.meta.dirname, '..');
+export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..'); // khong dung import.meta.dirname: Node < 20.11 khong co
 const envFile = resolve(ROOT, '.env');
-if (existsSync(envFile)) process.loadEnvFile(envFile);
+if (existsSync(envFile) && typeof process.loadEnvFile === 'function') process.loadEnvFile(envFile);
 
 const env = (k, d = '') => (process.env[k] ?? d).trim();
 

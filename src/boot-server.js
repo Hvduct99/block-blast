@@ -15,7 +15,7 @@ export async function api(url, data) {
   const o = { credentials: 'same-origin', cache: 'no-store' };
   if (data) { const f = new URLSearchParams(); for (const k in data) f.append(k, data[k] == null ? '' : data[k]); o.method = 'POST'; o.body = f; }
   const r = await fetch(url, o);
-  let j; try { j = JSON.parse(await r.text()); } catch (_) { j = { ok: false, error: 'Máy chủ đang bận, vui lòng thử lại.' }; }
+  let j; try { j = JSON.parse(await r.text()); } catch (_) { j = { ok: false, error: r.status >= 502 ? 'Không kết nối được máy chủ game (HTTP ' + r.status + ') - ứng dụng Node chưa chạy' : 'Máy chủ trả về dữ liệu lỗi (HTTP ' + r.status + ')' }; }
   return { status: r.status, data: j };
 }
 window.TT_API = api;

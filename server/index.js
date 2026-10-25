@@ -45,7 +45,8 @@ app.all('/api/:name.php', async (req, res) => {
   } catch (e) {
     if (e instanceof Out) return res.status(e.status).json(e.data);
     console.error('Lỗi máy chủ:', req.params.name, P.action, e);
-    res.status(500).json({ ok: false, error: 'Máy chủ đang bận, vui lòng thử lại.' });
+    const dbErr = /^(ECONNREFUSED|ENOTFOUND|ETIMEDOUT|ER_ACCESS_DENIED_ERROR|ER_BAD_DB_ERROR|ER_NO_SUCH_TABLE|PROTOCOL_CONNECTION_LOST)$/.test(e.code || '');
+    res.status(500).json({ ok: false, error: dbErr ? 'Máy chủ chưa kết nối được cơ sở dữ liệu (' + e.code + ') - kiểm tra biến môi trường DB_*' : 'Máy chủ đang bận, vui lòng thử lại.' });
   }
 });
 

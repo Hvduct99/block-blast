@@ -22,9 +22,9 @@ hPanel → Websites → **Node.js Web App** → kết nối repo GitHub, cài đ
 | Mục | Giá trị |
 |---|---|
 | Framework preset | Express / Other |
-| Node version | 20 trở lên (khuyên dùng 22) |
+| Node version | 22 (tối thiểu 20.19) |
 | Build command | `npm run build` |
-| Start command / Entry file | `npm start` / `server/index.js` |
+| Entry file (Start command) | `app.cjs` (`npm start`) |
 | Output directory | `dist` |
 
 **Environment variables** (không ghi vào mã nguồn): `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER`, `PUSHER_PREFIX`, `SESSION_SECRET` (xem [.env.example](.env.example)).
