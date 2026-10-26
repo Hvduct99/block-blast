@@ -3,8 +3,7 @@
 //  - Client CHI gui hanh dong "dung chieu X len cac muc tieu [mid...]". May chu kiem tra hoi chieu/cap/so muc tieu,
 //    tu tinh sat thuong, tru HP trong transaction, tinh EXP/vang/roi do, roi phat su kien qua Pusher cho ca map.
 import { pool, q, one, col, tx } from '../db.js';
-import { R, int, now, randInt, fail, mem, userPayload, grantReward, dropLoot, lootList, mapBossReward, questProgress, sendMail, pusher, rtTrigger, rtTriggerMany, rtMapChannel, rtUserChannel } from '../core.js';
-import { PUSHER } from '../config.js';
+import { R, CFG, int, now, clock, randInt, fail, mem, userPayload, grantReward, dropLoot, lootList, mapBossReward, questProgress, sendMail, pusher, rtTrigger, rtTriggerMany, rtMapChannel, rtUserChannel } from '../core.js';
 
 const WORLD_W = 9000, MOB_N = 30, FBOSS_MID = 99, MBOSS_MID = 98, MOB_MID_MAX = 90;
 // cap mo, hoi chieu toi thieu (s), he so sat thuong, so muc tieu toi da, ti le chi mang - PHAI GIONG NET_SK trong game.js
@@ -38,11 +37,11 @@ async function seedMap(s) {
     const kind = i % 7 === 4 ? 'elite' : (i % 4 === 2 ? 'ranged' : 'mob'), hp = mobMaxHp(s, kind);
     rows.push([s.idx, i + 1, kind, Math.trunc(x0 + i * step), i % 3 === 1 ? 1 : 0, hp, hp, 0]);
   }
-  await q(pool, 'INSERT IGNORE INTO tt_map_mobs(stage,mid,kind,x,tier,hp,max_hp,respawn_at) VALUES ?', [rows]);
-  await q(pool, 'INSERT IGNORE INTO tt_map_state(stage) VALUES(?)', [s.idx]);
+  await q(pool, 'INSERT INTO tt_map_mobs(stage,mid,kind,x,tier,hp,max_hp,respawn_at) VALUES ' + rows.map(() => '(?,?,?,?,?,?,?,?)').join(',') + ' ON CONFLICT DO NOTHING', rows.flat());
+  await q(pool, 'INSERT INTO tt_map_state(stage) VALUES(?) ON CONFLICT DO NOTHING', [s.idx]);
 }
 async function mobList(stage, only) {
-  const rows = await q(pool, 'SELECT mid,kind,x,tier,hp,max_hp,respawn_at FROM tt_map_mobs WHERE stage=?' + (only ? ' AND mid IN (?)' : ''), only ? [stage, only] : [stage]);
+  const rows = await q(pool, 'SELECT mid,kind,x,tier,hp,max_hp,respawn_at FROM tt_map_mobs WHERE stage=?' + (only ? ' AND mid = ANY(?)' : ''), only ? [stage, only] : [stage]);
   const t = now();
   return rows.filter(r => !(+r.mid >= MOB_MID_MAX && +r.hp <= 0))
     .map(r => ({ mid: +r.mid, kind: r.kind, x: +r.x, tier: +r.tier, hp: +r.hp, max: +r.max_hp, respawn: +r.hp <= 0 && +r.respawn_at > 0 ? Math.max(0, r.respawn_at - t) : 0 }));
@@ -69,7 +68,7 @@ export const rt = {
     mem(uid).rt = { stage: idx, casts: {}, bk: {}, buff: 0, chat: 0, move: 0, mobs: 0 };
     const chat = (await q(pool, "SELECT m.id,m.from_id,m.text,u.nickname FROM tt_messages m JOIN tt_users u ON u.id=m.from_id WHERE m.scope='map' AND m.guild_id=? ORDER BY m.id DESC LIMIT 15", [idx])).reverse();
     return { ok: true, stage: idx, world_w: WORLD_W, mobs: await mobList(idx), chat, mb_left: await mbLeft(idx), loot: await lootList(pool, idx),
-      pusher: { key: PUSHER.key, cluster: PUSHER.cluster, channel: rtMapChannel(idx), user_channel: rtUserChannel(uid) }, me: uid };
+      pusher: { key: CFG.pusher.key, cluster: CFG.pusher.cluster, channel: rtMapChannel(idx), user_channel: rtUserChannel(uid) }, me: uid };
   },
   // dong bo lai (moi 10-15s) + hoi sinh
   async state({ P, uid }) {
@@ -84,7 +83,7 @@ export const rt = {
     const entries = P.batch != null
       ? String(P.batch).slice(0, 4000).split(';').slice(0, 16).map(x => x.split(':')).filter(p => p.length === 3).map(p => [p[0], int(p[1]), p[2]])
       : [[String(P.skill || ''), int(P.cast), String(P.targets || '')]];
-    const me = await userPayload(pool, uid), t = performance.now() / 1000;
+    const me = await userPayload(pool, uid), t = clock();
     const pairs = []; let buffOut = 0, cdHit = false, lastSk = 'atk';
     for (const [sk, cast, tg] of entries) {
       const def = SKILLS[sk]; if (!def) continue;
@@ -147,7 +146,7 @@ export const rt = {
       const mbRow = await one(c, 'SELECT hp FROM tt_map_mobs WHERE stage=? AND mid=?', [idx, MBOSS_MID]);
       if (mbk >= R.MB_KILLS && (!mbRow || +mbRow.hp <= 0)) {
         const hp = mobMaxHp(s, 'mboss'), px = bossX(int(P.px ?? 1800) + 600);
-        await q(c, "REPLACE INTO tt_map_mobs(stage,mid,kind,x,tier,hp,max_hp,respawn_at,dmgs) VALUES(?,?,'mboss',?,0,?,?,0,NULL)", [idx, MBOSS_MID, px, hp, hp]);
+        await q(c, "INSERT INTO tt_map_mobs(stage,mid,kind,x,tier,hp,max_hp,respawn_at,dmgs) VALUES(?,?,'mboss',?,0,?,?,0,NULL) ON CONFLICT (stage,mid) DO UPDATE SET kind=EXCLUDED.kind,x=EXCLUDED.x,tier=0,hp=EXCLUDED.hp,max_hp=EXCLUDED.max_hp,respawn_at=0,dmgs=NULL", [idx, MBOSS_MID, px, hp, hp]);
         await q(c, 'UPDATE tt_map_state SET mb_kills=0 WHERE stage=?', [idx]);
         mbSpawn = { mid: MBOSS_MID, kind: 'mboss', x: px, tier: 0, hp, max: hp, respawn: 0 };
       }
@@ -155,7 +154,7 @@ export const rt = {
       const fbRow = await one(c, 'SELECT hp FROM tt_map_mobs WHERE stage=? AND mid=?', [idx, FBOSS_MID]);
       if (fbk >= 40 && (!fbRow || +fbRow.hp <= 0)) {
         const hp = mobMaxHp(s, 'fboss'), px = bossX(int(P.px ?? 1800) + 400);
-        await q(c, "REPLACE INTO tt_map_mobs(stage,mid,kind,x,tier,hp,max_hp,respawn_at,dmgs) VALUES(?,?,'fboss',?,0,?,?,0,NULL)", [idx, FBOSS_MID, px, hp, hp]);
+        await q(c, "INSERT INTO tt_map_mobs(stage,mid,kind,x,tier,hp,max_hp,respawn_at,dmgs) VALUES(?,?,'fboss',?,0,?,?,0,NULL) ON CONFLICT (stage,mid) DO UPDATE SET kind=EXCLUDED.kind,x=EXCLUDED.x,tier=0,hp=EXCLUDED.hp,max_hp=EXCLUDED.max_hp,respawn_at=0,dmgs=NULL", [idx, FBOSS_MID, px, hp, hp]);
         await q(c, 'UPDATE tt_map_state SET fb_kills=0 WHERE stage=?', [idx]);
         fbSpawn = { mid: FBOSS_MID, kind: 'fboss', x: px, tier: 0, hp, max: hp, respawn: 0 };
       }
@@ -202,9 +201,9 @@ export const rt = {
   async chat({ P, uid }) {
     const idx = int(P.stage), r = needInMap(uid, idx), text = [...String(P.text || '')].slice(0, 200).join('').trim();
     if (!text) fail('Tin nhắn trống');
-    const t = performance.now() / 1000; if (t - r.chat < 1) fail('Chat chậm lại 1 giây', 429); r.chat = t;
+    const t = clock(); if (t - r.chat < 1) fail('Chat chậm lại 1 giây', 429); r.chat = t;
     const me = await userPayload(pool, uid);
-    const id = (await q(pool, "INSERT INTO tt_messages(scope,guild_id,from_id,text) VALUES('map',?,?,?)", [idx, uid, text])).insertId;
+    const id = (await q(pool, "INSERT INTO tt_messages(scope,guild_id,from_id,text) VALUES('map',?,?,?) RETURNING id", [idx, uid, text])).insertId;
     const msg = { id, uid, name: me.nickname, text };
     rtTrigger(rtMapChannel(idx), 'chat', msg, sock(P));
     return { ok: true, msg };
@@ -215,7 +214,7 @@ export const rt = {
   leave({ uid }) { mem(uid).rt = null; return { ok: true }; },
 };
 async function relay({ P, uid }, a) {
-  const idx = int(P.stage), r = needInMap(uid, idx), t = performance.now() / 1000;
+  const idx = int(P.stage), r = needInMap(uid, idx), t = clock();
   if (t - r[a] < (a === 'move' ? 0.4 : 0.8)) fail('Quá nhanh', 429); r[a] = t;
   if (a === 'move') {
     const d = { id: uid, x: Math.max(0, Math.min(WORLD_W, int(P.x))), y: Math.max(0, Math.min(2000, int(P.y))), f: int(P.f ?? 1) < 0 ? -1 : 1,
@@ -230,21 +229,18 @@ async function relay({ P, uid }, a) {
   return { ok: true };
 }
 
-// pusher_auth.php: chi nguoi da dang nhap; chi vao map da mo; chi kenh rieng cua chinh minh
-export async function pusherAuth(req, res) {
-  const uid = int(req.session && req.session.uid);
-  if (!uid) return res.status(403).send('Chưa đăng nhập');
-  const p = pusher(); if (!p) return res.status(503).send('Tạm thời bận');
-  const socket = String(req.body.socket_id || ''), channel = String(req.body.channel_name || '');
-  if (!/^\d+\.\d+$/.test(socket)) return res.status(400).send('socket_id?');
-  try {
-    const m = channel.match(new RegExp('^presence-' + PUSHER.prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-map-(\\d+)$'));
-    if (m) {
-      const st = int(m[1]), u = await userPayload(pool, uid);
-      if (!u || st < 1 || st > R.MAX_STAGE || st > u.stage_max) return res.status(403).send('Chưa mở bản đồ này');
-      return res.json(p.authorizeChannel(socket, channel, { user_id: String(uid), user_info: { name: u.nickname, lv: u.level, sect: u.sect || '', av: u.avatar || 'samurai' } }));
-    }
-    if (channel === rtUserChannel(uid)) return res.json(p.authorizeChannel(socket, channel));
-    return res.status(403).send('Kênh không hợp lệ');
-  } catch (e) { console.error('pusher_auth:', e); return res.status(500).send('Lỗi xác thực'); }
+// pusher_auth.php: chi nguoi da dang nhap; chi vao map da mo; chi kenh rieng cua chinh minh. Tra ve [status, noi dung]
+export async function pusherAuth(uid, P) {
+  if (!uid) return [403, 'Chưa đăng nhập'];
+  const p = pusher(); if (!p) return [503, 'Tạm thời bận'];
+  const socket = String(P.socket_id || ''), channel = String(P.channel_name || '');
+  if (!/^\d+\.\d+$/.test(socket)) return [400, 'socket_id?'];
+  const pre = 'presence-' + CFG.pusher.prefix + '-map-', num = channel.startsWith(pre) ? channel.slice(pre.length) : '';
+  if (/^\d+$/.test(num)) {
+    const st = int(num), u = await userPayload(pool, uid);
+    if (!u || st < 1 || st > R.MAX_STAGE || st > u.stage_max) return [403, 'Chưa mở bản đồ này'];
+    return [200, p.authorizeChannel(socket, channel, { user_id: String(uid), user_info: { name: u.nickname, lv: u.level, sect: u.sect || '', av: u.avatar || 'samurai' } })];
+  }
+  if (channel === rtUserChannel(uid)) return [200, p.authorizeChannel(socket, channel)];
+  return [403, 'Kênh không hợp lệ'];
 }

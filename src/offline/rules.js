@@ -20,17 +20,17 @@ export const inSafe = x => { x = int(x); return x < SAFE_W || x > MAP_W - SAFE_R
 // ---------- du lieu dung chung voi client (src/data/*.js) ----------
 let EQ = null;
 export function equipDefs() {
-  if (!EQ) { EQ = Object.assign({ items: [] }, window.TATON_EQUIP || {}); EQ.byCode = {}; EQ.items.forEach(x => { EQ.byCode[x.code] = x; }); }
+  if (!EQ) { EQ = Object.assign({ items: [] }, globalThis.TATON_EQUIP || {}); EQ.byCode = {}; EQ.items.forEach(x => { EQ.byCode[x.code] = x; }); }
   return EQ;
 }
 export const itemDef = code => equipDefs().byCode[code] || null;
-export const sectsData = () => window.TATON_SECTS || {};
+export const sectsData = () => globalThis.TATON_SECTS || {};
 export const avatarDef = id => (sectsData().avatars || {})[id] || {};
 export const sectMods = id => { const s = (sectsData().list || []).find(x => x.id === id); return (s && s.mods) || { hp: 0, mp: 0, atk: 0, def: 0 }; };
-export const stageRow = idx => ((window.TATON_DATA && window.TATON_DATA.stages) || []).find(s => +s.idx === +idx) || null;
+export const stageRow = idx => ((globalThis.TATON_DATA && globalThis.TATON_DATA.stages) || []).find(s => +s.idx === +idx) || null;
 let QD = null;
 export function questDefs() {
-  if (!QD) { QD = {}; ((window.TATON_QUESTS || {}).quests || []).forEach(q => { QD[q.id] = q; }); }
+  if (!QD) { QD = {}; ((globalThis.TATON_QUESTS || {}).quests || []).forEach(q => { QD[q.id] = q; }); }
   return QD;
 }
 // Cong thuc ren (truoc day nam trong bang tt_forge_recipes do install.php tao)

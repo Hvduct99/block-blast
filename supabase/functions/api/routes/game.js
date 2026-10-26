@@ -1,42 +1,40 @@
 // auth.php, game.php, loot.php, quest.php, farm.php, forge.php
-import bcrypt from 'bcryptjs';
 import { pool, q, one, col, tx } from '../db.js';
-import { R, int, now, fail, out, mem, userPayload, grantReward, giveItem, addItem, takeItem, newEquip, dropLoot, lootList, mapBossReward, questProgress, rtTrigger, rtMapChannel } from '../core.js';
+import { STAGES } from '../shared/data.js';
+import { R, DEPS, int, now, clock, fail, out, mem, signToken, userPayload, grantReward, giveItem, addItem, takeItem, newEquip, dropLoot, lootList, mapBossReward, questProgress, rtTrigger, rtMapChannel } from '../core.js';
 
 const stage = idx => R.stageRow(idx);
 
 // ---------- auth.php ----------
 export const auth = {
   _public: true,
-  async register({ P, req }) {
+  async register({ P }) {
     const u = String(P.username || '').trim(), p = String(P.password || ''); let n = String(P.nickname || '').trim() || u;
     if (u.length < 3 || p.length < 4) fail('Tên đăng nhập ≥3 ký tự, mật khẩu ≥4 ký tự');
     if (!/^[A-Za-z0-9_.]{3,50}$/.test(u)) fail('Tên đăng nhập chỉ gồm chữ không dấu, số, _ .');
     n = [...n].slice(0, 30).join('');
     if (await one(pool, 'SELECT id FROM tt_users WHERE username=?', [u])) fail('Tên đăng nhập đã tồn tại');
-    const hash = await bcrypt.hash(p, 10);
+    const hash = await DEPS.bcrypt.hash(p, 10);
     const uid = await tx(async c => {
-      const id = (await q(c, 'INSERT INTO tt_users(username,password_hash,nickname) VALUES(?,?,?)', [u, hash, n])).insertId;
+      const id = (await q(c, 'INSERT INTO tt_users(username,password_hash,nickname) VALUES(?,?,?) RETURNING id', [u, hash, n])).insertId;
       await addItem(c, id, 'binh_hp', 3); await addItem(c, id, 'binh_mp', 2);
       const eid = await newEquip(c, id, 'dao_thuong'); if (eid) await q(c, 'UPDATE tt_equip SET equipped=1 WHERE id=?', [eid]);
       await q(c, 'UPDATE tt_users SET eq_v=1, ingot=5 WHERE id=?', [id]);
-      for (let s = 0; s < 6; s++) await q(c, 'INSERT IGNORE INTO tt_farm_plots(user_id,slot) VALUES(?,?)', [id, s]);
+      for (let s = 0; s < 6; s++) await q(c, 'INSERT INTO tt_farm_plots(user_id,slot) VALUES(?,?) ON CONFLICT DO NOTHING', [id, s]);
       return id;
     });
-    req.session.uid = uid;
-    return { ok: true, uid };
+    return { ok: true, uid, token: signToken(uid) };
   },
-  async login({ P, req }) {
+  async login({ P }) {
     const u = String(P.username || '').trim(), p = String(P.password || '');
     const user = await one(pool, 'SELECT * FROM tt_users WHERE username=?', [u]);
     // mat khau tao boi PHP password_hash ($2y$) dung chung chuan bcrypt
-    if (!user || !await bcrypt.compare(p, String(user.password_hash).replace(/^\$2y\$/, '$2b$'))) fail('Sai tài khoản/mật khẩu', 401);
+    if (!user || !await DEPS.bcrypt.compare(p, String(user.password_hash).replace(/^\$2y\$/, '$2b$'))) fail('Sai tài khoản/mật khẩu', 401);
     if (+user.banned) fail('Tài khoản đã bị khóa: ' + (user.ban_note || 'vi phạm quy định'), 403);
-    req.session.uid = +user.id;
-    return { ok: true, uid: +user.id, nickname: user.nickname };
+    return { ok: true, uid: +user.id, nickname: user.nickname, token: signToken(+user.id) };
   },
-  logout({ req }) { req.session = null; return { ok: true }; },
-  async me({ req, requireLogin }) {
+  logout() { return { ok: true }; }, // token nam o trinh duyet, client tu xoa
+  async me({ requireLogin }) {
     const uid = await requireLogin();
     const u = await userPayload(pool, uid); if (!u) fail('Tài khoản không tồn tại', 401);
     return { ok: true, user: u };
@@ -47,14 +45,14 @@ export const auth = {
 export const game = {
   async stages({ uid }) {
     const progress = {}; (await q(pool, 'SELECT * FROM tt_user_progress WHERE user_id=?', [uid])).forEach(r => { progress[r.stage_idx] = r; });
-    return { ok: true, stages: (await import('../data.js')).STAGES, progress };
+    return { ok: true, stages: STAGES, progress };
   },
   async start_stage({ P, uid }) {
     const idx = int(P.stage || 1), s = stage(idx); if (!s) fail('Bản đồ không tồn tại');
     const me = await userPayload(pool, uid);
     if (idx > me.stage_max) fail('Chưa mở bản đồ này', 403);
     if (me.jail && me.jail !== idx) fail('Bạn đang bị TRUY NÃ (khiêu khích ' + me.provoke + ') - kẹt tại bản đồ ' + me.jail + '. Chờ giảm khiêu khích hoặc dùng Thanh Tâm Đan.', 403);
-    mem(uid).run = { stage: idx, mode: 'train', t: now(), kills: 0, tokens: 6.0, last: performance.now() / 1000, fbk: 0, fbt: 0, mbk: 0, mbt: 0 };
+    mem(uid).run = { stage: idx, mode: 'train', t: now(), kills: 0, tokens: 6.0, last: clock(), fbk: 0, fbt: 0, mbk: 0, mbt: 0 };
     return { ok: true, user: me };
   },
   // Bao giet quai (gom lo n con). May chu tu tinh exp/vang/do roi
@@ -63,7 +61,7 @@ export const game = {
     if (n + el < 1) fail('n?');
     const run = mem(uid).run; if (!run || run.stage !== idx) fail('Chưa vào bản đồ');
     const s = stage(idx); if (!s) fail('Bản đồ không tồn tại');
-    const t = performance.now() / 1000, tokens = Math.min(12, run.tokens + (t - run.last) * 2.5);
+    const t = clock(), tokens = Math.min(12, run.tokens + (t - run.last) * 2.5);
     n = Math.min(n, Math.floor(tokens)); el = Math.min(el, Math.max(0, Math.floor(tokens) - n));
     if (n + el <= 0) { run.tokens = tokens; run.last = t; fail('Quá nhanh', 429); }
     run.tokens = tokens - n - el; run.last = t; run.kills += n + el; run.fbk += n + el; run.mbk += n + el;
@@ -106,7 +104,7 @@ export const game = {
     if (!(R.sectsData().list || []).some(x => x.id === sid)) fail('Môn phái không tồn tại');
     const me = await userPayload(pool, uid);
     if (me.level < R.SECT_LV) fail('Đạt cấp ' + R.SECT_LV + ' mới được bái nhập môn phái');
-    const r = await q(pool, "UPDATE tt_users SET sect=?, avatar=IF(avatar IS NULL OR avatar='','samurai',avatar) WHERE id=? AND (sect IS NULL OR sect='')", [sid, uid]);
+    const r = await q(pool, "UPDATE tt_users SET sect=?, avatar=CASE WHEN avatar IS NULL OR avatar='' THEN 'samurai' ELSE avatar END WHERE id=? AND (sect IS NULL OR sect='')", [sid, uid]);
     if (r.affectedRows < 1) fail('Bạn đã gia nhập môn phái rồi');
     return { ok: true, user: await userPayload(pool, uid) };
   },
@@ -180,7 +178,7 @@ export const loot = {
       const l = await one(c, 'SELECT * FROM tt_map_loot WHERE id=? FOR UPDATE', [id]);
       if (!l || +l.taken || l.expire_at < t) out({ ok: false, gone: true, error: 'Vật phẩm đã bị nhặt hoặc biến mất' });
       if (+l.owner_id !== uid && l.own_until > t) out({ ok: false, wait: l.own_until - t, error: 'Vật phẩm của người khác (còn ' + (l.own_until - t) + ' giây)' });
-      const pr = await one(c, 'SELECT map_stage, x FROM tt_presence_online WHERE user_id=? AND updated_at > (NOW() - INTERVAL 30 SECOND)', [uid]);
+      const pr = await one(c, 'SELECT map_stage, x FROM tt_presence_online WHERE user_id=? AND updated_at > NOW() - INTERVAL \'30 seconds\'', [uid]);
       if (!pr || +pr.map_stage !== +l.stage || Math.abs(pr.x - l.x) > 700) out({ ok: false, far: true, error: 'Lại gần hơn để nhặt' });
       await q(c, 'UPDATE tt_map_loot SET taken=1 WHERE id=?', [id]);
       await giveItem(c, uid, l.code, +l.qty);
@@ -208,7 +206,7 @@ export const quest = {
     const qd = R.questDefs()[P.id]; if (!qd) fail('Nhiệm vụ không tồn tại');
     const u = await userPayload(pool, uid), st = qStatus(qd, u);
     if (st !== 'available') fail(st === 'locked' ? 'Chưa đủ điều kiện nhận' : 'Đã nhận nhiệm vụ này');
-    await q(pool, "INSERT INTO tt_quests(user_id,quest_id,state,progress,day) VALUES(?,?,'active',0,?) ON DUPLICATE KEY UPDATE state='active',progress=0,day=VALUES(day)", [uid, qd.id, u.today]);
+    await q(pool, "INSERT INTO tt_quests(user_id,quest_id,state,progress,day) VALUES(?,?,'active',0,?) ON CONFLICT (user_id,quest_id) DO UPDATE SET state='active',progress=0,day=EXCLUDED.day", [uid, qd.id, u.today]);
     return { ok: true, user: await userPayload(pool, uid) };
   },
   async claim({ P, uid }) {
@@ -230,7 +228,7 @@ export const farm = {
   async state({ uid }) {
     const sel = () => q(pool, 'SELECT slot,crop_code,planted_at,grow_sec FROM tt_farm_plots WHERE user_id=? ORDER BY slot', [uid]);
     let plots = await sel();
-    if (plots.length < 6) { for (let s = 0; s < 6; s++) await q(pool, 'INSERT IGNORE INTO tt_farm_plots(user_id,slot) VALUES(?,?)', [uid, s]); plots = await sel(); }
+    if (plots.length < 6) { for (let s = 0; s < 6; s++) await q(pool, 'INSERT INTO tt_farm_plots(user_id,slot) VALUES(?,?) ON CONFLICT DO NOTHING', [uid, s]); plots = await sel(); }
     const t = now();
     return { ok: true, now: t, plots: plots.map(p => ({ slot: +p.slot, crop_code: p.crop_code, planted_at: +p.planted_at, grow_sec: +p.grow_sec,
       ready: !!(p.crop_code && t - p.planted_at >= p.grow_sec), remain: p.crop_code ? Math.max(0, p.grow_sec - (t - p.planted_at)) : 0 })) };
@@ -241,7 +239,7 @@ export const farm = {
     if (slot < 0 || slot > 5) fail('Ô không hợp lệ');
     const cur = await one(pool, 'SELECT crop_code FROM tt_farm_plots WHERE user_id=? AND slot=?', [uid, slot]);
     if (cur && cur.crop_code) fail('Ô đang có cây, thu hoạch trước đã');
-    await q(pool, 'INSERT INTO tt_farm_plots(user_id,slot,crop_code,planted_at,grow_sec) VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE crop_code=VALUES(crop_code),planted_at=VALUES(planted_at),grow_sec=VALUES(grow_sec)', [uid, slot, crop, now(), CROPS[crop].sec]);
+    await q(pool, 'INSERT INTO tt_farm_plots(user_id,slot,crop_code,planted_at,grow_sec) VALUES(?,?,?,?,?) ON CONFLICT (user_id,slot) DO UPDATE SET crop_code=EXCLUDED.crop_code,planted_at=EXCLUDED.planted_at,grow_sec=EXCLUDED.grow_sec', [uid, slot, crop, now(), CROPS[crop].sec]);
     return { ok: true };
   },
   async harvest({ P, uid }) {

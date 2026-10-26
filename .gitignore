@@ -10,3 +10,4 @@ legacy-php/
 
 # Bien moi truong may chu (mat khau DB, Pusher secret)
 .env
+.pglite/

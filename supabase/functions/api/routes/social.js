@@ -1,6 +1,6 @@
 // equip.php, pk.php, social.php, friend.php
 import { pool, q, one, col, tx } from '../db.js';
-import { R, int, now, randInt, fail, mem, userPayload, addItem, takeItem, pkAdjust, questProgress, sendMail, takeMails, socialUpdates, rtTrigger, rtUserChannel } from '../core.js';
+import { R, int, now, clock, randInt, fail, mem, userPayload, addItem, takeItem, pkAdjust, questProgress, sendMail, takeMails, socialUpdates, rtTrigger, rtUserChannel } from '../core.js';
 
 // ---------- equip.php: moi thao tac tru tien/nguyen lieu trong transaction ----------
 async function lockEquip(c, uid, id) { const r = await one(c, 'SELECT * FROM tt_equip WHERE id=? AND user_id=? FOR UPDATE', [int(id), uid]); if (!r) fail('Không tìm thấy trang bị'); return r; }
@@ -119,8 +119,8 @@ export const equip = {
 
 // ---------- pk.php ----------
 const onlinePlayers = async uid => {
-  await q(pool, 'DELETE FROM tt_presence_online WHERE updated_at < (NOW() - INTERVAL 2 MINUTE)');
-  return (await q(pool, 'SELECT p.user_id,p.nickname,p.map_stage,p.hp,u.level,u.pk_mode,u.provoke,u.provoke_at,u.sect FROM tt_presence_online p LEFT JOIN tt_users u ON u.id=p.user_id WHERE p.user_id!=? AND p.updated_at > (NOW() - INTERVAL 30 SECOND) LIMIT 20', [uid]))
+  await q(pool, 'DELETE FROM tt_presence_online WHERE updated_at < NOW() - INTERVAL \'2 minutes\'');
+  return (await q(pool, 'SELECT p.user_id,p.nickname,p.map_stage,p.hp,u.level,u.pk_mode,u.provoke,u.provoke_at,u.sect FROM tt_presence_online p LEFT JOIN tt_users u ON u.id=p.user_id WHERE p.user_id!=? AND p.updated_at > NOW() - INTERVAL \'30 seconds\' LIMIT 20', [uid]))
     .map(x => { x.provoke = R.pkEff(x); delete x.provoke_at; return x; });
 };
 export const pk = {
@@ -180,7 +180,7 @@ export const social = {
     const em = EMBLEMS.includes(P.emblem) ? P.emblem : 'em_lion', cost = 200;
     const gid = await tx(async c => {
       if ((await q(c, 'UPDATE tt_users SET gold=gold-? WHERE id=? AND gold>=?', [cost, uid, cost])).affectedRows < 1) fail('Lập bang cần ' + cost + ' ngân lượng');
-      const id = (await q(c, 'INSERT INTO tt_guilds(name,master_id,emblem) VALUES(?,?,?)', [name, uid, em])).insertId;
+      const id = (await q(c, 'INSERT INTO tt_guilds(name,master_id,emblem) VALUES(?,?,?) RETURNING id', [name, uid, em])).insertId;
       await q(c, "INSERT INTO tt_guild_members(guild_id,user_id,role) VALUES(?,?,'master')", [id, uid]);
       return id;
     });
@@ -220,7 +220,7 @@ export const social = {
     let gid = null, to = null;
     if (scope === 'guild') { const gm = await myGuild(uid); if (!gm) fail('Chưa có bang'); gid = gm.guild_id; }
     if (scope === 'private') { to = int(P.to_id); if (!to || to === uid) fail('Thiếu người nhận'); if (!await one(pool, 'SELECT id FROM tt_users WHERE id=?', [to])) fail('Người nhận không tồn tại'); }
-    const ago = await one(pool, 'SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS ago FROM tt_messages WHERE from_id=? ORDER BY id DESC LIMIT 1', [uid]);
+    const ago = await one(pool, 'SELECT EXTRACT(EPOCH FROM NOW() - created_at) AS ago FROM tt_messages WHERE from_id=? ORDER BY id DESC LIMIT 1', [uid]);
     if (ago && int(ago.ago) < 2) fail('Chat chậm lại 2 giây', 429);
     await q(pool, 'INSERT INTO tt_messages(scope,guild_id,from_id,to_id,text) VALUES(?,?,?,?,?)', [scope, gid, uid, to, text]);
     return { ok: true };
@@ -243,7 +243,7 @@ export const social = {
   // PK tren ban do - may chu tu tinh sat thuong (client chi gui he so chieu)
   async pvp_hit({ P, uid }) {
     const tid = int(P.target_id), mult = Math.max(0.5, Math.min(6, parseFloat(P.mult) || 1));
-    const m = mem(uid), tNow = performance.now() / 1000;
+    const m = mem(uid), tNow = clock();
     if (m.last_pvp && tNow - m.last_pvp < 0.6) return { ok: false, error: 'Đánh chậm lại', cd: true }; m.last_pvp = tNow;
     if (tid === uid) fail('Tự đánh mình?');
     const A = await userPayload(pool, uid), T = await userPayload(pool, tid);
@@ -251,7 +251,7 @@ export const social = {
     if (A.pk_mode <= 0) fail('Bạn đang ở chế độ Hòa bình');
     if (A.level < 10 || T.level < 10) fail('Tân thủ dưới cấp 10 được bảo vệ');
     if (A.pk_mode === 1 && A.guild_id && A.guild_id === T.guild_id) fail('PK Bang không đánh người cùng bang');
-    const to = await one(pool, 'SELECT * FROM tt_presence_online WHERE user_id=? AND updated_at > (NOW() - INTERVAL 30 SECOND)', [tid]);
+    const to = await one(pool, 'SELECT * FROM tt_presence_online WHERE user_id=? AND updated_at > NOW() - INTERVAL \'30 seconds\'', [tid]);
     if (!to) fail('Đối thủ ngoại tuyến');
     if (+to.hp <= 0) fail('Đối thủ đã trọng thương');
     const mp = await one(pool, 'SELECT map_stage,x FROM tt_presence_online WHERE user_id=?', [uid]);
@@ -278,14 +278,14 @@ export const social = {
   async online_ping({ P, uid, me }) {
     const stage = Math.max(1, Math.min(R.MAX_STAGE, int(P.stage || 1))), x = Math.max(0, Math.min(20000, int(P.x ?? 100))), y = Math.max(0, Math.min(3000, int(P.y ?? 300)));
     const hp = Math.max(0, Math.min(int(P.hp), int(me.hp_max)));
-    await q(pool, 'INSERT INTO tt_presence_online(user_id,nickname,map_stage,x,y,hp) VALUES(?,?,?,?,?,?) ON DUPLICATE KEY UPDATE nickname=VALUES(nickname),map_stage=VALUES(map_stage),x=VALUES(x),y=VALUES(y),hp=VALUES(hp),updated_at=NOW()', [uid, me.nickname, stage, x, y, hp]);
+    await q(pool, 'INSERT INTO tt_presence_online(user_id,nickname,map_stage,x,y,hp) VALUES(?,?,?,?,?,?) ON CONFLICT (user_id) DO UPDATE SET nickname=EXCLUDED.nickname,map_stage=EXCLUDED.map_stage,x=EXCLUDED.x,y=EXCLUDED.y,hp=EXCLUDED.hp,updated_at=NOW()', [uid, me.nickname, stage, x, y, hp]);
     let pending = 0;
     try {
       pending = int(await col(pool, 'SELECT dmg_pending FROM tt_presence_online WHERE user_id=?', [uid]));
       if (pending > 0) await q(pool, 'UPDATE tt_presence_online SET dmg_pending=GREATEST(0,dmg_pending-?) WHERE user_id=?', [pending, uid]);
     } catch (_) { pending = 0; }
-    await q(pool, 'DELETE FROM tt_presence_online WHERE updated_at < (NOW() - INTERVAL 2 MINUTE)');
-    const online = (await q(pool, 'SELECT p.user_id,p.nickname,p.map_stage,p.x,p.y,p.hp,u.level,u.pk_mode,u.provoke,u.provoke_at,u.sect,gm.guild_id FROM tt_presence_online p JOIN tt_users u ON u.id=p.user_id LEFT JOIN tt_guild_members gm ON gm.user_id=p.user_id WHERE p.user_id!=? AND p.map_stage=? AND p.updated_at > (NOW() - INTERVAL 20 SECOND) ORDER BY p.updated_at DESC LIMIT 30', [uid, stage]))
+    await q(pool, 'DELETE FROM tt_presence_online WHERE updated_at < NOW() - INTERVAL \'2 minutes\'');
+    const online = (await q(pool, 'SELECT p.user_id,p.nickname,p.map_stage,p.x,p.y,p.hp,u.level,u.pk_mode,u.provoke,u.provoke_at,u.sect,gm.guild_id FROM tt_presence_online p JOIN tt_users u ON u.id=p.user_id LEFT JOIN tt_guild_members gm ON gm.user_id=p.user_id WHERE p.user_id!=? AND p.map_stage=? AND p.updated_at > NOW() - INTERVAL \'20 seconds\' ORDER BY p.updated_at DESC LIMIT 30', [uid, stage]))
       .map(r => { r.provoke = R.pkEff(r); delete r.provoke_at; ['user_id', 'x', 'y', 'hp', 'level', 'pk_mode', 'guild_id', 'map_stage'].forEach(k => { r[k] = int(r[k]); }); return r; });
     return { ok: true, online, dmg: pending, mails: await takeMails(pool, uid), pk: { pk_mode: int(me.pk_mode), provoke: R.pkEff(me), friendly: int(me.friendly) }, social: await socialUpdates(pool, uid) };
   },
@@ -297,7 +297,7 @@ const OFFER_TTL = 600, TRADE_KINDS = ['potion', 'mat', 'stone', 'up', 'crop'];
 const fmtVN = n => (+n || 0).toLocaleString('vi-VN');
 const targetId = (P, uid) => { const t = int(P.target_id); if (t <= 0 || t === uid) fail('Người chơi không hợp lệ'); return t; };
 const nick = async id => String(await col(pool, 'SELECT nickname FROM tt_users WHERE id=?', [id]) || '');
-const isOnline = async id => int(await col(pool, 'SELECT map_stage FROM tt_presence_online WHERE user_id=? AND updated_at > (NOW() - INTERVAL 40 SECOND)', [id]));
+const isOnline = async id => int(await col(pool, 'SELECT map_stage FROM tt_presence_online WHERE user_id=? AND updated_at > NOW() - INTERVAL \'40 seconds\'', [id]));
 async function notify(id, text, ev = 'social') { await sendMail(pool, id, text); rtTrigger(rtUserChannel(id), ev, { text }); }
 function tradeText(d) {
   const p = [];
@@ -320,8 +320,8 @@ export const friend = {
   },
   async friends({ uid }) {
     const rows = await q(pool, `SELECT u.id,u.nickname,u.level,u.sect,f.status,f.user_id AS req_by,
-        (SELECT p.map_stage FROM tt_presence_online p WHERE p.user_id=u.id AND p.updated_at > (NOW() - INTERVAL 40 SECOND)) AS map_stage
-      FROM tt_friends f JOIN tt_users u ON u.id = IF(f.user_id=?, f.friend_id, f.user_id)
+        (SELECT p.map_stage FROM tt_presence_online p WHERE p.user_id=u.id AND p.updated_at > NOW() - INTERVAL '40 seconds') AS map_stage
+      FROM tt_friends f JOIN tt_users u ON u.id = CASE WHEN f.user_id=? THEN f.friend_id ELSE f.user_id END
       WHERE (f.user_id=? OR f.friend_id=?) ORDER BY f.status DESC, u.level DESC LIMIT 100`, [uid, uid, uid]);
     return { ok: true, friends: rows.map(r => ({ id: +r.id, nickname: r.nickname, level: +r.level, sect: r.sect, status: +r.status, mine: +r.req_by === uid, map: int(r.map_stage) })) };
   },
@@ -333,7 +333,7 @@ export const friend = {
       await notify(t, await nick(uid) + ' đã đồng ý kết bạn với bạn.');
       return { ok: true, status: 1 };
     }
-    await q(pool, 'INSERT IGNORE INTO tt_friends(user_id,friend_id,status) VALUES(?,?,0)', [uid, t]);
+    await q(pool, 'INSERT INTO tt_friends(user_id,friend_id,status) VALUES(?,?,0) ON CONFLICT DO NOTHING', [uid, t]);
     await notify(t, await nick(uid) + ' muốn kết bạn với bạn (bấm V để xem).');
     return { ok: true, status: 0 };
   },
@@ -349,7 +349,7 @@ export const friend = {
     return { ok: true };
   },
   async offers({ uid }) {
-    await q(pool, `UPDATE tt_offers SET status=4 WHERE status=0 AND created_at < (NOW() - INTERVAL ${OFFER_TTL} SECOND)`);
+    await q(pool, `UPDATE tt_offers SET status=4 WHERE status=0 AND created_at < NOW() - INTERVAL '${OFFER_TTL} seconds'`);
     const rows = await q(pool, `SELECT o.id,o.kind,o.from_id,o.to_id,o.data,a.nickname AS from_name,b.nickname AS to_name FROM tt_offers o
       JOIN tt_users a ON a.id=o.from_id JOIN tt_users b ON b.id=o.to_id WHERE o.status=0 AND (o.to_id=? OR o.from_id=?) ORDER BY o.id DESC LIMIT 40`, [uid, uid]);
     return { ok: true, offers: rows.map(r => { const d = parse(r.data); return { id: +r.id, kind: r.kind, incoming: +r.to_id === uid, from: +r.from_id, to: +r.to_id, from_name: r.from_name, to_name: r.to_name, give: tradeText(d.give || {}), ask: tradeText(d.ask || {}), stake: int(d.stake) }; }) };
@@ -384,7 +384,7 @@ export const friend = {
   async trade_accept({ P, uid }) {
     const id = int(P.id);
     const { from, g, k } = await tx(async c => {
-      const o = await one(c, `SELECT * FROM tt_offers WHERE id=? AND to_id=? AND kind='trade' AND status=0 AND created_at > (NOW() - INTERVAL ${OFFER_TTL} SECOND) FOR UPDATE`, [id, uid]);
+      const o = await one(c, `SELECT * FROM tt_offers WHERE id=? AND to_id=? AND kind='trade' AND status=0 AND created_at > NOW() - INTERVAL '${OFFER_TTL} seconds' FOR UPDATE`, [id, uid]);
       if (!o) fail('Lời mời không còn hoặc đã hết hạn');
       const from = +o.from_id, d = parse(o.data), g = d.give || {}, k = d.ask || {};
       const bal = {}; (await q(c, 'SELECT id,gold,ingot FROM tt_users WHERE id IN (?,?) ORDER BY id FOR UPDATE', [uid, from])).forEach(r => { bal[r.id] = r; });
@@ -396,7 +396,7 @@ export const friend = {
       await q(c, mv, [int(g.gold) - int(k.gold), int(g.ingot) - int(k.ingot), uid]);
       for (const code in (g.items || {})) { const n = int(g.items[code]); if (!await takeItem(c, from, code, n)) fail('Người mời không còn đủ vật phẩm'); await addItem(c, uid, code, n); }
       const eqs = (g.equips || []).map(int);
-      if (eqs.length && (await q(c, 'UPDATE tt_equip SET user_id=?, equipped=0 WHERE user_id=? AND equipped=0 AND id IN (?)', [uid, from, eqs])).affectedRows !== eqs.length) fail('Trang bị của người mời đã thay đổi (đang mặc hoặc đã bán)');
+      if (eqs.length && (await q(c, 'UPDATE tt_equip SET user_id=?, equipped=0 WHERE user_id=? AND equipped=0 AND id = ANY(?)', [uid, from, eqs])).affectedRows !== eqs.length) fail('Trang bị của người mời đã thay đổi (đang mặc hoặc đã bán)');
       await q(c, 'UPDATE tt_offers SET status=1 WHERE id=?', [id]);
       return { from, g, k };
     });
@@ -415,7 +415,7 @@ export const friend = {
   async duel_accept({ P, uid }) {
     const id = int(P.id);
     const res = await tx(async c => {
-      const o = await one(c, `SELECT * FROM tt_offers WHERE id=? AND to_id=? AND kind='duel' AND status=0 AND created_at > (NOW() - INTERVAL ${OFFER_TTL} SECOND) FOR UPDATE`, [id, uid]);
+      const o = await one(c, `SELECT * FROM tt_offers WHERE id=? AND to_id=? AND kind='duel' AND status=0 AND created_at > NOW() - INTERVAL '${OFFER_TTL} seconds' FOR UPDATE`, [id, uid]);
       if (!o) fail('Lời thách đấu không còn');
       const from = +o.from_id, stake = int(parse(o.data).stake);
       if (stake > 0) for (const r of await q(c, 'SELECT id,gold FROM tt_users WHERE id IN (?,?) ORDER BY id FOR UPDATE', [uid, from])) if (+r.gold < stake) fail((+r.id === uid ? 'Bạn' : 'Người thách đấu') + ' không đủ ngân lượng đặt cược');

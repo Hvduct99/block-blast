@@ -1,0 +1,8 @@
+# Cau hinh Supabase cho repo (GitHub integration / Supabase CLI)
+project_id = "ta-ton-truyen-ky"
+
+[functions.api]
+enabled = true
+# Game tu xac thuc bang token rieng (header x-tt-token), khong dung JWT cua Supabase Auth
+verify_jwt = false
+entrypoint = "./functions/api/index.ts"

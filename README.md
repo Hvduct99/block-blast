@@ -2,34 +2,45 @@
 
 Game nhập vai võ hiệp 2D (Ỷ Thiên Đồ Long Ký) chạy hoàn toàn trên trình duyệt: 30 bản đồ, 16 môn phái, Boss bản đồ, cường hóa / đục sao / khảm đá, nông trại, bang hội, nhiệm vụ NPC.
 
-**Công nghệ:** Node.js (Express + MySQL + Pusher) · [Vite](https://vite.dev) · [Three.js](https://threejs.org) (nền 3D trang đăng nhập) · [Tailwind CSS v4](https://tailwindcss.com) · engine game Canvas 2D.
+**Công nghệ:** [Vite](https://vite.dev) · [Three.js](https://threejs.org) (nền 3D trang đăng nhập) · [Tailwind CSS v4](https://tailwindcss.com) · engine game Canvas 2D · máy chủ: **Supabase** (Postgres + Edge Function) · realtime: **Pusher**.
 
-## Chạy trên máy
+## Kiến trúc
+
+```
+Trình duyệt (Hostinger, file tĩnh dist/)  ──HTTP──▶  Supabase Edge Function "api"  ──▶  Postgres (Supabase)
+            │                                          (logic game, giữ nguyên api/*.php cũ)
+            └──────────── WebSocket ─────────────▶  Pusher (bản đồ chung thời gian thực)
+```
+
+## Deploy
+
+**1. Supabase** (repo đã nối GitHub ↔ Supabase): mỗi lần push lên `main`, Supabase tự chạy SQL trong [supabase/migrations/](supabase/migrations/) và deploy function [supabase/functions/api/](supabase/functions/api/).
+Thêm secrets một lần: Dashboard → **Edge Functions → Secrets**: `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER` (`ap1`), `PUSHER_PREFIX` (`tt`), `TT_SECRET` (chuỗi ngẫu nhiên dài).
+
+Deploy bằng tay (nếu cần):
+
+```bash
+npx supabase login
+npx supabase link --project-ref xkdzxgtlgrktvkwtvidx
+npx supabase db push
+npx supabase functions deploy api --no-verify-jwt
+npx supabase secrets set PUSHER_APP_ID=... PUSHER_KEY=... PUSHER_SECRET=... PUSHER_CLUSTER=ap1 PUSHER_PREFIX=tt TT_SECRET=...
+```
+
+Kiểm tra: `https://xkdzxgtlgrktvkwtvidx.supabase.co/functions/v1/api/health` → `{"ok":true,"db":true,"pusher":true}`.
+
+**2. Hostinger** (meimo.net): trang tĩnh — Framework **Vite**, build `npm run build`, output `dist`. Không cần biến môi trường (đổi project Supabase: đặt `VITE_API_URL`).
+
+## Chạy thử trên máy (không cần Supabase)
 
 ```bash
 npm install
-cp .env.example .env   # điền thông tin MySQL + Pusher
-npm run build
-npm start              # http://localhost:3000
+cp .env.example .env                                         # điền PUSHER_* nếu muốn thử bản đồ chung
+VITE_API_URL=http://localhost:3000/functions/v1/api npm run build
+npm start                                                    # http://localhost:3000 (Postgres nhúng PGlite)
 ```
 
-Khi sửa giao diện: chạy `npm run dev:server` và `npm run dev` song song (Vite chuyển `/api` sang cổng 3000).
-
-## Deploy lên Hostinger (chơi nhiều người)
-
-hPanel → Websites → **Node.js Web App** → kết nối repo GitHub, cài đặt:
-
-| Mục | Giá trị |
-|---|---|
-| Framework preset | Express / Other |
-| Node version | 22 (tối thiểu 20.19) |
-| Build command | `npm run build` |
-| Entry file (Start command) | `app.cjs` (`npm start`) |
-| Output directory | `dist` |
-
-**Environment variables** (không ghi vào mã nguồn): `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER`, `PUSHER_PREFIX`, `SESSION_SECRET` (xem [.env.example](.env.example)).
-
-Máy chủ tự tạo bảng còn thiếu và nạp bản đồ / công thức rèn mỗi lần khởi động, dùng được luôn database MySQL của bản PHP cũ (tài khoản cũ đăng nhập bình thường). Kiểm tra kết nối DB: `/api/health`.
+Sửa `src/data/*` hoặc `src/offline/rules.js` → chạy `npm run sync:supabase` rồi commit (function dùng bản sao trong `supabase/functions/api/shared/`). Đổi dữ liệu bản đồ sau khi đã deploy → tạo file migration mới.
 
 ## Deploy lên GitHub Pages (bản chơi một mình)
 
@@ -46,13 +57,14 @@ index.html            Trang đăng nhập / đăng ký (Tailwind + nền Three.j
 play.html             Trang game
 public/assets/        Ảnh sprite, nền, nhạc (phục vụ nguyên trạng)
 src/
-  boot-server.js      Chọn máy chủ: Node thật (mặc định) hoặc giả lập (VITE_BACKEND=local)
+  boot-server.js      Chọn máy chủ: Supabase (mặc định) hoặc giả lập trong trình duyệt (VITE_BACKEND=local)
   login.js            Logic đăng nhập, sao lưu / khôi phục dữ liệu
   play.js             Điểm vào trang game
   three/scene.js      Cảnh 3D: núi thủy mặc, trăng, Đồ Long Đao, tàn lửa
-server/               Máy chủ Node: Express + MySQL + Pusher (port từ api/*.php cũ, giữ nguyên đường dẫn API)
-  api/                game/auth/loot/quest/farm/forge · equip/pk/social/friend · rt (bản đồ chung) + xác thực Pusher
-  schema.js           Tạo bảng / nâng cấp DB (thay install.php)
+supabase/
+  migrations/         Bảng Postgres (bật RLS) + dữ liệu bản đồ / công thức rèn (thay install.php)
+  functions/api/      Edge Function: app.js (định tuyến), core.js, routes/ (game · social · rt bản đồ chung), pusher.js
+scripts/              sync-supabase.mjs (sinh shared/ + seed), dev-server.mjs (chạy thử với PGlite)
 src/
   offline/            "Máy chủ" giả lập trong trình duyệt cho bản GitHub Pages (VITE_BACKEND=local)
     api.js            Các endpoint api/*.php cũ: auth, game, equip, forge, farm, quest, loot, social, friend, pk
@@ -65,7 +77,7 @@ src/
 
 ## Lưu ý
 
-- Bản Hostinger (máy chủ Node): bản đồ chung thời gian thực, PK, chat, bạn bè, giao dịch, bang hội giữa mọi người chơi.
+- Bản Hostinger + Supabase: bản đồ chung thời gian thực, PK, chat, bạn bè, giao dịch, bang hội giữa mọi người chơi.
 - Bản GitHub Pages chỉ là file tĩnh: dữ liệu lưu **trong trình duyệt**, chơi một mình (có sao lưu / khôi phục ở trang đăng nhập).
 
 ## Ghi công

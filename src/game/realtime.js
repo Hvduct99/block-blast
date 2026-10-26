@@ -18,7 +18,7 @@
       const P = j.pusher;
       if (!this.pusher || this.pusher.key !== P.key) {
         try { if (this.pusher) this.pusher.disconnect(); } catch (_) { }
-        this.pusher = new window.Pusher(P.key, { cluster: P.cluster, forceTLS: true, channelAuthorization: { endpoint: 'api/pusher_auth.php', transport: 'ajax' } });
+        this.pusher = new window.Pusher(P.key, { cluster: P.cluster, forceTLS: true, channelAuthorization: { endpoint: window.TT_API_BASE + '/pusher_auth.php', transport: 'ajax', headersProvider: () => window.TT_AUTH_HEADERS() } });
         this.pusher.key = P.key;
         this.pusher.connection.bind('state_change', s => { this.connected = s.current === 'connected'; this.socketId = this.pusher.connection.socket_id || null; this.emit('conn', s.current); });
         this.pusher.connection.bind('error', e => this.checkClientEventError(e));
