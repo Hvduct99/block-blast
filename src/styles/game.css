@@ -382,8 +382,8 @@ html.mobile .touch{display:block;position:absolute;inset:0;padding:0;z-index:4;p
 .joy-base{position:absolute;left:calc(env(safe-area-inset-left,0px) + 100px);top:calc(100% - 96px);width:140px;height:140px;margin:-70px 0 0 -70px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.07) 30%,rgba(16,10,26,.5));border:2px solid rgba(255,215,106,.5);opacity:.7;transition:opacity .15s;pointer-events:none}
 .joy-base.on{opacity:1;border-color:#ffd76a}
 .joy-knob{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3c0,#d8a020 60%,#8a5a10);border:2px solid #fff8;box-shadow:0 3px 12px #000b}
-.joy-l,.joy-r,.joy-d{position:absolute;color:#ffd76acc;font-size:16px;line-height:1;text-shadow:0 1px 3px #000}
-.joy-l{left:9px;top:50%;margin-top:-8px}.joy-r{right:9px;top:50%;margin-top:-8px}.joy-d{bottom:7px;left:50%;margin-left:-6px}
+.joy-u,.joy-l,.joy-r,.joy-d{position:absolute;color:#ffd76acc;font-size:16px;line-height:1;text-shadow:0 1px 3px #000}
+.joy-l{left:9px;top:50%;margin-top:-8px}.joy-r{right:9px;top:50%;margin-top:-8px}.joy-d{bottom:7px;left:50%;margin-left:-6px}.joy-u{top:7px;left:50%;margin-left:-6px}
 .tc-act{position:absolute;right:calc(env(safe-area-inset-right,0px) + 6px);bottom:6px;width:432px;height:250px;transform-origin:100% 100%;transform:scale(var(--tcs,1));pointer-events:none}
 .tb{position:absolute;pointer-events:auto;touch-action:none;border-radius:50%;border:2px solid #ffd76aaa;background:radial-gradient(circle at 50% 35%,rgba(70,50,90,.75),rgba(16,10,26,.82));color:#fff;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 3px 10px #0009;transition:transform .06s}
 .tb.on{transform:scale(.92);background:radial-gradient(circle,rgba(255,215,106,.7),rgba(120,80,20,.85));border-color:#fff}

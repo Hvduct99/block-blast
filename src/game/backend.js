@@ -15,7 +15,7 @@
       { k: 'ene', name: 'Năng lượng', ico: '💧', des: '+7 Nội lực / điểm' },
       { k: 'agi', name: 'Nhanh nhẹn', ico: '🌪️', des: '+1% Chí mạng / 4 điểm, +0.4% tốc chạy (tối đa 30%)' },
       { k: 'dfn', name: 'Phòng thủ', ico: '🛡️', des: '+1.5 Thủ / điểm' },
-      { k: 'mag', name: 'Pháp thuật', ico: '✨', des: '+1% sát thương tuyệt học (Q W E R T Y) / điểm' },
+      { k: 'mag', name: 'Pháp thuật', ico: '✨', des: '+1% sát thương tuyệt học (phím 1-6) / điểm' },
     ],
     // Cap 1-10 nhanh; tu cap 11 EXP tang theo cap so cong (PHAI GIONG exp_need trong config.php)
     expNeed: lv => { lv = lv | 0; if (lv <= 10) return 60 + 40 * lv; const k = lv - 10; return 460 + 120 * k + 18 * k * k; },

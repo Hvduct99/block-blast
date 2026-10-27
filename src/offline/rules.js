@@ -6,7 +6,8 @@ export const PK_JAIL = 100, PK_DECAY = 60;
 export const LV_HP = 25, LV_MP = 8, LV_ATK = 4, LV_DEF = 2;
 export const PTS_PER_LV = 5;
 export const ATTRS = ['str', 'vit', 'ene', 'agi', 'dfn', 'mag'];
-export const LOOT_OWN = 20, LOOT_TTL = 120;
+// Do roi: chu nhan nhat ngay, nguoi khac doi LOOT_OWN giay; ton tai LOOT_TTL giay
+export const LOOT_OWN = 15, LOOT_TTL = 60;
 export const MB_KILLS = 60;
 export const SECT_LV = 25;
 export const SAFE_W = 820, SAFE_R = 380, MAP_W = 9000;

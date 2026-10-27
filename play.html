@@ -135,10 +135,10 @@
         <button class="btn" id="btnResume" type="button">▶ Tiếp tục</button>
         <button class="btn red" id="btnLeave" type="button">🏠 Về màn hình nhân vật</button>
         <div class="pause-extra"><button class="btn ghost" type="button" data-proxy="btnMusic">🎵 Nhạc</button><button class="btn ghost" type="button" data-proxy="btnSfx">🔊 Âm thanh</button><button class="btn ghost" type="button" data-proxy="btnFull">⛶ Toàn màn hình</button><button class="btn ghost" type="button" data-proxy="btnAdmin" id="pxAdmin" hidden>👑 Quản trị</button><button class="btn ghost" type="button" data-proxy="btnAuth">🚪 Thoát game</button></div>
-        <div class="touch-help"><p>◀ ▶ <b>Kéo cần gạt</b> bên trái để chạy, kéo xuống để xuống bệ.</p><p><b>斬 Đánh</b> giữ để đánh liên tục · <b>⤒ Nhảy</b> chạm 2 lần để nhảy đôi, đeo cánh thì <b>giữ</b> để bay · <b>» Lướt</b> né đòn.</p><p>Các nút tuyệt học có tên bên dưới, vòng tối là thời gian hồi chiêu. Chạm vào người chơi khác để trò chuyện, giao dịch, thách đấu.</p></div>
+        <div class="touch-help"><p>◀ ▶ <b>Kéo cần gạt</b> bên trái để chạy, <b>đẩy lên để nhảy</b> (đẩy lên lần nữa = nhảy đôi, giữ để bay khi đeo cánh), kéo xuống để xuống bệ. Chạm vào người chơi / NPC để tự chạy tới.</p><p><b>斬 Đánh</b> giữ để đánh liên tục · <b>⤒ Nhảy</b> chạm 2 lần để nhảy đôi, đeo cánh thì <b>giữ</b> để bay · <b>» Lướt</b> né đòn.</p><p>Các nút tuyệt học có tên bên dưới, vòng tối là thời gian hồi chiêu. Chạm vào người chơi khác để trò chuyện, giao dịch, thách đấu.</p></div>
         <div class="keys-help">
-          <p><kbd>←</kbd><kbd>→</kbd> chạy · <kbd>↑</kbd>/<kbd>Space</kbd> nhảy (2 lần) · <kbd>↓</kbd> xuống bệ · <kbd>Shift</kbd>/<kbd>L</kbd> lướt</p>
-          <p><kbd>A</kbd> đánh thường · <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd><kbd>T</kbd><kbd>Y</kbd> tuyệt học · <kbd>1</kbd><kbd>2</kbd> thuốc · <kbd>F</kbd> người giao nhiệm vụ · <kbd>P</kbd>/<kbd>Esc</kbd> tạm dừng</p>
+          <p><kbd>A</kbd><kbd>D</kbd> (hoặc <kbd>←</kbd><kbd>→</kbd>) chạy · <kbd>W</kbd>/<kbd>Space</kbd> nhảy (2 lần) · <kbd>S</kbd> xuống bệ · <kbd>Shift</kbd>/<kbd>L</kbd> lướt</p>
+          <p><kbd>J</kbd>/<kbd>X</kbd> đánh thường · <kbd>1</kbd>–<kbd>6</kbd> tuyệt học · <kbd>Q</kbd> thuốc máu · <kbd>E</kbd> thuốc nội lực · <kbd>F</kbd> nói chuyện NPC · <kbd>P</kbd>/<kbd>Esc</kbd> tạm dừng · bấm chuột vào người chơi / NPC để chạy tới</p>
           <p><kbd>C</kbd> nhân vật · <kbd>B</kbd> hành trang · <kbd>N</kbd> nhiệm vụ · <kbd>M</kbd> bản đồ · <kbd>H</kbd> tiệm · <kbd>O</kbd> lò rèn · <kbd>U</kbd> nông trại · <kbd>G</kbd> bang · <kbd>K</kbd> tỷ võ (PK) · <kbd>I</kbd> BXH · <kbd>V</kbd> bạn bè/giao dịch · đeo cánh: nhảy 2 lần rồi <b>giữ phím nhảy để bay</b> · <kbd>Enter</kbd> trò chuyện · bấm chuột vào người chơi: trò chuyện riêng, giao dịch, thách đấu, kết bạn</p>
         </div>
         <details class="credits-box"><summary>Ghi công tác giả hình ảnh &amp; âm nhạc</summary>
@@ -149,7 +149,7 @@
 
     <!-- dien thoai: can gat + cum nut chieu (chi hien o che do cam ung) -->
     <div id="touch" class="touch" hidden>
-      <div class="joy" id="joy"><div class="joy-base" id="joyBase"><div class="joy-knob" id="joyKnob"></div><span class="joy-l">◀</span><span class="joy-r">▶</span><span class="joy-d">▼</span></div></div>
+      <div class="joy" id="joy"><div class="joy-base" id="joyBase"><div class="joy-knob" id="joyKnob"></div><span class="joy-u">▲</span><span class="joy-l">◀</span><span class="joy-r">▶</span><span class="joy-d">▼</span></div></div>
       <div class="tc-top">
         <button type="button" class="tc-mini" id="tcQuest"><span class="tc-ico" data-tico="ui_quest"></span><small>Nhiệm vụ</small></button>
         <button type="button" class="tc-mini" id="tcMenu"><span class="tc-ico">☰</span><small>Menu</small></button>

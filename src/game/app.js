@@ -30,7 +30,7 @@
   const STONE_COLOR = { atk: '#ff5a4a', hp: '#46d06a', mp: '#4aa8ff', def: '#f0c030', crit: '#c47cff' };
   const AV_NAME = { samurai: 'Kiếm khách (nam)', ninja: 'Thích khách (nam)', kunoichi: 'Nữ hiệp (nữ)' };
   const AV_ICON = { samurai: 'ui_char', ninja: 'ui_ninja', kunoichi: 'ui_female' };
-  const SKILL_KEYS = 'AQWERTY';
+  const SKILL_KEYS = 'J123456';
   const AV_PICK = ['samurai', 'kunoichi'];      // 2 nhan vat: nam / nu
   const SECT_LV = () => Game.SECT_LV || 25;     // cap duoc bai nhap mon phai
   const NOSECT_COL = '#8a96aa';
@@ -888,7 +888,7 @@
       if (!r.ok) { toast(r.error, 'err'); return; }
       const nm = B().sectOf(sectPick).name;
       Game.refreshLook(); toast('Đã bái nhập ' + nm + '! Lĩnh ngộ toàn bộ tuyệt học môn phái.', 'ok'); Game.Sfx.play('levelup');
-      Game.banner('Bái nhập ' + nm + '!', '#ffd76a', 3); Game.log('Bái nhập ' + nm + ': mở khóa tuyệt kỹ [T] và [Y], nhận chỉ số môn phái.');
+      Game.banner('Bái nhập ' + nm + '!', '#ffd76a', 3); Game.log('Bái nhập ' + nm + ': mở khóa tuyệt kỹ [5] và [6], nhận chỉ số môn phái.');
       renderAll(); closeSect(); return;
     }
     if (d.act === 'winclose') { closeWin(); return; }
@@ -1063,17 +1063,18 @@
       btn.addEventListener('contextmenu', e => e.preventDefault());
     });
     // can gat: cham o dau trong nua trai la can hien o do
-    const joy = $('joy'), base = $('joyBase'), knob = $('joyKnob'), JR = 48, held = { left: false, right: false, down: false };
+    const joy = $('joy'), base = $('joyBase'), knob = $('joyKnob'), JR = 48, held = { left: false, right: false, down: false, jump: false };
     let jid = null, jx = 0, jy = 0;
     const setDir = (k, v) => { if (held[k] !== v) { held[k] = v; Game.press(k, v); } };
     const jmove = (cx, cy) => {
       let dx = cx - jx, dy = cy - jy; const d = Math.hypot(dx, dy); if (d > JR) { dx *= JR / d; dy *= JR / d; }
       knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
       setDir('left', dx < -12); setDir('right', dx > 12); setDir('down', dy > 30 && Math.abs(dx) < 30);
+      setDir('jump', dy < -28); // day can len = nhay (giu de bay khi deo canh, tha ra day lai = nhay doi)
     };
     const jend = e => {
       if (e.pointerId !== jid) return; jid = null; knob.style.transform = ''; base.classList.remove('on'); base.style.left = base.style.top = '';
-      setDir('left', false); setDir('right', false); setDir('down', false);
+      setDir('left', false); setDir('right', false); setDir('down', false); setDir('jump', false);
     };
     joy.addEventListener('pointerdown', e => {
       if (jid != null) return; e.preventDefault(); jid = e.pointerId; try { joy.setPointerCapture(jid); } catch (_) { }
@@ -1113,7 +1114,7 @@
       const st = Game.touchState(), dlgOn = !$('ovDialog').hidden;
       t.classList.toggle('idle', !st || dlgOn);
       $('pxAdmin').hidden = $('btnAdmin').hidden;
-      if (!st) { if (jid != null || held.left || held.right) { jid = null; knob.style.transform = ''; base.classList.remove('on'); held.left = held.right = held.down = false; } return; }
+      if (!st) { if (jid != null || held.left || held.right) { jid = null; knob.style.transform = ''; base.classList.remove('on'); held.left = held.right = held.down = held.jump = false; } return; }
       if (st.play) for (const k in held) if (held[k]) Game.hold(k, true); // giu huong sau khi dong cua so
       const sig = st.sk.map(k => k.id + k.icon + k.name).join('|');
       if (sig !== skSig) {

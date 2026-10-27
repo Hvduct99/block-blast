@@ -76,13 +76,13 @@
   const ANIM = MODELS.samurai.anims; // ten dong tac hop le
   // Co che 6 chieu (giong moi phai); ten/mau/icon lay theo mon phai
   const SKILL_BASE = [
-    { id: 'atk', key: 'A', lv: 1, mp: 0, cd: 0.30, des: 'Đòn đánh thường, hồi nội lực' },
-    { id: 'tt', key: 'Q', lv: 1, mp: 12, cd: 2.2, des: 'Liên hoàn ám kình xuyên thấu phía trước' },
-    { id: 'sth', key: 'W', lv: 3, mp: 28, cd: 7, des: 'Chấn động diện rộng, choáng quái xung quanh' },
-    { id: 'dl', key: 'E', lv: 5, mp: 35, cd: 5, des: 'Lướt tới + kình khí khổng lồ xuyên địch' },
-    { id: 'cd', key: 'R', lv: 8, mp: 30, cd: 16, des: 'Hồi 30% máu, khiên 25% máu, +30% công 10s' },
-    { id: 'ult', key: 'T', lv: 12, mp: 70, cd: 28, des: 'Tuyệt kỹ trấn phái - đánh toàn màn hình' },
-    { id: 'vx', key: 'Y', lv: 18, mp: 40, cd: 12, des: 'Phong bạo xoáy quanh thân - hút và đánh liên tục quái xung quanh' },
+    { id: 'atk', key: 'J', lv: 1, mp: 0, cd: 0.30, des: 'Đòn đánh thường, hồi nội lực' },
+    { id: 'tt', key: '1', lv: 1, mp: 12, cd: 2.2, des: 'Liên hoàn ám kình xuyên thấu phía trước' },
+    { id: 'sth', key: '2', lv: 3, mp: 28, cd: 7, des: 'Chấn động diện rộng, choáng quái xung quanh' },
+    { id: 'dl', key: '3', lv: 5, mp: 35, cd: 5, des: 'Lướt tới + kình khí khổng lồ xuyên địch' },
+    { id: 'cd', key: '4', lv: 8, mp: 30, cd: 16, des: 'Hồi 30% máu, khiên 25% máu, +30% công 10s' },
+    { id: 'ult', key: '5', lv: 12, mp: 70, cd: 28, des: 'Tuyệt kỹ trấn phái - đánh toàn màn hình' },
+    { id: 'vx', key: '6', lv: 18, mp: 40, cd: 12, des: 'Phong bạo xoáy quanh thân - hút và đánh liên tục quái xung quanh' },
   ];
   const DEFAULT_SECT = { id: 'minh_giao', name: 'Minh Giáo', color: '#b8202a', mods: { hp: 0, mp: 0, atk: 0, def: 0 }, proj: 'orb', ult: 'dragon',
     skills: [['Đồ Long Đao Pháp', '斬', 'sk_atk', '#ffd24a'], ['Thất Thương Quyền', '拳', 'sk_tt', '#ff9a3a'], ['Sư Tử Hống', '吼', 'sk_sth', '#7cf0ff'], ['Hiệu Lệnh Thiên Hạ', '刀', 'sk_dl', '#ffd24a'], ['Cửu Dương Hộ Thể', '陽', 'sk_cd', '#ffb020'], ['Long Đằng Cửu Thiên', '龍', 'sk_ult', '#ffe066'], ['Thánh Hỏa Phong Bạo', '焰', 'sk_tornado', '#ff6a3a']] };
@@ -1022,6 +1022,17 @@
     G.camX += (tx - G.camX) * Math.min(1, dt * 5);
     G.camY += (ty - G.camY) * Math.min(1, dt * 4);
   }
+  // Bam vao nguoi choi / NPC -> nhan vat tu chay toi (huy khi tu bam di chuyen, bi ket hoac qua 12s)
+  function walkTo(kind, ref, range, onArrive) { G.walkTo = { kind, ref, range, onArrive, t: 0, lastX: G.p ? G.p.x : 0, stuck: 0 }; }
+  function autoWalk(p, dt) {
+    const w = G.walkTo, tgt = w.kind === 'player' ? G.others.get(w.ref) : w.ref;
+    if (!tgt || p.dead || (w.t += dt) > 12) { G.walkTo = null; return 0; }
+    const dx = tgt.x - p.x;
+    if (Math.abs(dx) <= w.range) { G.walkTo = null; p.face = dx >= 0 ? 1 : -1; if (w.onArrive) w.onArrive(); return 0; }
+    w.stuck = Math.abs(p.x - w.lastX) < 0.5 ? w.stuck + dt : 0; w.lastX = p.x;
+    if (w.stuck > 0.8) { G.walkTo = null; return 0; } // vuong tuong
+    return dx > 0 ? 1 : -1;
+  }
   function updatePlayer(dt) {
     const p = G.p, I = G.input;
     for (const k in p.cds) if (p.cds[k] > 0) p.cds[k] -= dt;
@@ -1035,6 +1046,7 @@
     if (inSafe(p.x)) { p.hp = Math.min(p.maxhp, p.hp + p.maxhp * 0.05 * dt); p.mp = Math.min(p.maxmp, p.mp + p.maxmp * 0.05 * dt); } // nghi ngoi trong doanh trai
     let mv = 0;
     if (I.left) mv -= 1; if (I.right) mv += 1;
+    if (!mv && G.walkTo) mv = autoWalk(p, dt);
     // leo day: dung o day, giu Nhay -> leo len; giu Xuong khi dang tren khong -> tut xuong; bam trai/phai -> buong day
     const vn = p.dashT > 0 || p.flying ? null : vineAt(p);
     if (p.climb && (!vn || (mv && !I.jump && !I.down))) p.climb = false;
@@ -1354,7 +1366,8 @@
       glow(x, y, 26, l.col, 0.55);
       ctx.strokeStyle = l.col; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(x, GROUND - 2, 16, 5, 0, 0, 7); ctx.stroke();
       if (!drawIcon(l.ico, x - 15, y - 15, 30, fade)) { ctx.fillStyle = l.col; ctx.fillRect(x - 8, y - 8, 16, 16); }
-      if (p && Math.abs(p.x - l.x) < 380) txt(lootName(l) + (locked ? ' 🔒' : ''), x, y - 22, 12, locked ? '#bbb' : l.col, 'center', true);
+      if (p && Math.abs(p.x - l.x) < 380) txt(lootName(l) + (locked ? ' 🔒 ' + Math.ceil(l.ownT - G.t) + 's' : ''), x, y - 22, 12, locked ? '#bbb' : l.col, 'center', true);
+      if (locked) { ctx.strokeStyle = '#bbb'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 19, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, (l.ownT - G.t) / 15)); ctx.stroke(); } // vong dem nguoc cho nhat
       ctx.globalAlpha = 1;
     });
   }
@@ -2236,7 +2249,7 @@
   }
   function hudSkills(p, u) {
     const SK = skills();
-    const slots = SK.map(sk => ({ sk })).concat([{ pot: 'binh_hp', key: '1', glyph: '藥', col: '#9dff6a', label: 'Thuốc máu' }, { pot: 'binh_mp', key: '2', glyph: '丹', col: '#5ab0ff', label: 'Thuốc nội lực' }]);
+    const slots = SK.map(sk => ({ sk })).concat([{ pot: 'binh_hp', key: 'Q', glyph: '藥', col: '#9dff6a', label: 'Thuốc máu' }, { pot: 'binh_mp', key: 'E', glyph: '丹', col: '#5ab0ff', label: 'Thuốc nội lực' }]);
     const sz = 60, gap = 10, tw = slots.length * sz + (slots.length - 1) * gap, x0 = Math.max(12, W / 2 - tw / 2 - 35), y0 = H - sz - 26;
     ctx.font = 'bold 11px "Segoe UI",Arial,sans-serif';
     slots.forEach((sl, i) => { // ten tieng Viet duoi o
@@ -2280,11 +2293,14 @@
   }
 
   // ================= INPUT =================
-  // Di chuyen: phim mui ten. A = danh thuong (J cung duoc). Q W E R T Y = 6 tuyet hoc.
+  // Di chuyen: A D (hoac mui ten), W / Space nhay, S xuong be. J / X danh thuong. 1-6 tuyet hoc. Q / E thuoc mau / noi luc.
   const KEYMAP = {
     ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'jump', Space: 'jump',
-    KeyA: 'atk', KeyJ: 'atk', ShiftLeft: 'dash', ShiftRight: 'dash', KeyL: 'dash',
-    KeyF: 'talk', KeyQ: 'tt', KeyW: 'sth', KeyE: 'dl', KeyR: 'cd', KeyT: 'ult', KeyY: 'vx', Digit1: 'hp', Digit2: 'mpp', Numpad1: 'hp', Numpad2: 'mpp',
+    KeyA: 'left', KeyD: 'right', KeyS: 'down', KeyW: 'jump',
+    KeyJ: 'atk', KeyX: 'atk', ShiftLeft: 'dash', ShiftRight: 'dash', KeyL: 'dash', KeyF: 'talk',
+    Digit1: 'tt', Digit2: 'sth', Digit3: 'dl', Digit4: 'cd', Digit5: 'ult', Digit6: 'vx',
+    Numpad1: 'tt', Numpad2: 'sth', Numpad3: 'dl', Numpad4: 'cd', Numpad5: 'ult', Numpad6: 'vx',
+    KeyQ: 'hp', KeyE: 'mpp',
   };
   const HOLD = { left: 1, right: 1, atk: 1, down: 1, jump: 1 };
   function typing(e) { const t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable); }
@@ -2294,9 +2310,10 @@
     const a = KEYMAP[e.code];
     if (down && G.state === 'npc' && (e.code === 'Escape' || e.code === 'KeyF')) { if (window.UI) UI.closeNpc(); e.preventDefault(); return; }
     if (down && (e.code === 'Escape' || e.code === 'KeyP') && (G.state === 'play' || G.state === 'pause')) { togglePause(); e.preventDefault(); return; }
-    if (G.state === 'dialog' && down && (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyJ' || e.code === 'KeyA')) { if (window.UI) UI.dialogNext(); e.preventDefault(); return; }
+    if (G.state === 'dialog' && down && (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyJ' || e.code === 'KeyX')) { if (window.UI) UI.dialogNext(); e.preventDefault(); return; }
     if (!a) return;
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+    if (down && (a === 'left' || a === 'right' || a === 'jump')) G.walkTo = null; // tu bam di chuyen -> huy tu chay toi muc tieu
     if (!down) { if (HOLD[a]) G.input[a] = false; return; }
     if (G.state !== 'play') return;
     if (HOLD[a]) G.input[a] = true;
@@ -2343,9 +2360,15 @@
     const wx = pt.x / Z + G.camX, wy = pt.y / Z + G.camY;
     let pick = null, pd = 1e9;
     G.others.forEach((o, id) => { const d = Math.abs(o.x - wx); if (d < 38 && wy > o.y - 115 && wy < o.y + 12 && d < pd) { pd = d; pick = id; } });
-    if (pick != null && G.onPlayerClick) { ev.preventDefault(); G.onPlayerClick(pick, (G.others.get(pick) || {}).name || '', ev.clientX, ev.clientY); return; }
+    if (pick != null && G.onPlayerClick) {
+      ev.preventDefault();
+      const o = G.others.get(pick), cx = ev.clientX, cy = ev.clientY;
+      if (Math.abs(o.x - G.p.x) <= 110) G.onPlayerClick(pick, o.name || '', cx, cy);
+      else { walkTo('player', pick, 90, () => G.onPlayerClick(pick, o.name || '', cx, cy)); floatText(o.x, o.y - 130, '▼', '#ffd76a', 18); }
+      return;
+    }
     const cn = G.npcs.find(n => Math.abs(n.x - wx) < 40 && wy > GROUND - 100 && wy < GROUND + 10);
-    if (cn) { if (Math.abs(cn.x - G.p.x) < 160) talkNpc(cn); else floatText(cn.x, GROUND - 120, 'Lại gần hơn', '#ccc', 13); return; }
+    if (cn) { ev.preventDefault(); if (Math.abs(cn.x - G.p.x) < 80) talkNpc(cn); else { walkTo('npc', cn, 60, () => talkNpc(cn)); floatText(cn.x, GROUND - 120, '▼', '#ffd76a', 18); } return; }
     if (ev.pointerType === 'mouse' && ev.button === 0) G.pressed.atk = true;
   }
 
@@ -2428,6 +2451,7 @@
     },
     setPkInfo(list) { const m = {}; (list || []).forEach(o => { m[+o.user_id] = { pk: +o.pk_mode || 0, prov: +o.provoke || 0, g: +o.guild_id || 0, lv: +o.level || 1 }; }); G.pkInfo = m; },
     set onPvpHit(fn) { G.onPvpHit = fn; },
+    get view() { return { camX: G.camX, camY: G.camY, z: Z, w: W, h: H, npcs: G.npcs.map(n => ({ id: n.id, x: n.x })) }; }, // chi doc (kiem thu / giao dien)
     get shared() { return G.shared && !!(window.RT && RT.ch); },
     myBubble(text) { G.bubbles[+user().id || 0] = { text, t: G.t, mine: true }; },
     showBubble(id, text) { if (+id && (+id === +user().id || G.others.has(+id))) G.bubbles[+id] = { text, t: G.t }; },

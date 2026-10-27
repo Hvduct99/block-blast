@@ -1,6 +1,6 @@
 // 16 mon phai. mods: % cong them vao chi so (hp/mp/atk/def). proj: kieu chieu Q (orb|needle|sword|petal). ult: tuyet ky T (dragon|swords|palm|storm)
 // counters: khac che 2 phai (PK: +20% sat thuong len phai bi khac, -15% khi bi khac). avatars: chi so tao hinh (%)
-// skills: 7 chieu theo thu tu A(danh thuong) Q W E R T Y: [ten, chu Han, icon, mau]
+// skills: 7 chieu theo thu tu J(danh thuong) 1 2 3 4 5 6: [ten, chu Han, icon, mau]
 window.TATON_SECTS = { "avatars": {"samurai": {"name": "Kiếm khách", "sex": "nam", "desc": "Đao kiếm nặng, da dày - bền bỉ tiền tuyến.", "mods": {"hp": 6, "mp": 0, "atk": 0, "def": 6}, "crit": 0},
  "ninja": {"name": "Thích khách", "sex": "nam", "desc": "Ra đòn nhanh hiểm, chuyên chí mạng.", "mods": {"hp": 0, "mp": 0, "atk": 6, "def": 0}, "crit": 3},
  "kunoichi": {"name": "Nữ hiệp", "sex": "nữ", "desc": "Nội lực dồi dào, thân pháp linh hoạt.", "mods": {"hp": 0, "mp": 12, "atk": 3, "def": 0}, "crit": 2}},

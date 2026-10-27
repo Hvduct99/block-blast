@@ -144,7 +144,7 @@ export async function dropLoot(c, stage, items, x, owner, ownerOnly = false) {
   for (const code of codes) {
     const qn = int(items[code]); if (qn <= 0 || !R.itemDef(code)) continue;
     const lx = Math.max(60, Math.min(8940, int(x) + Math.round((i - (n - 1) / 2) * 44) + randInt(-12, 12))); i++;
-    const own = t + (ownerOnly ? R.LOOT_TTL : R.LOOT_OWN);
+    const own = t + R.LOOT_OWN; // ca do Boss: nguoi khac cung nhat duoc sau LOOT_OWN giay
     const r = await q(c, 'INSERT INTO tt_map_loot(stage,x,code,qty,owner_id,own_until,expire_at) VALUES(?,?,?,?,?,?,?) RETURNING id', [int(stage), lx, code, qn, int(owner), own, t + R.LOOT_TTL]);
     res.push({ id: r.insertId, code, qty: qn, x: lx, owner: int(owner), own: own - t, ttl: R.LOOT_TTL });
   }

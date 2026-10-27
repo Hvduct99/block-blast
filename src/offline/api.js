@@ -69,7 +69,7 @@ function dropLoot(stage, items, x, owner, ownerOnly = false) {
   codes.forEach(code => {
     const q = int(items[code]); if (q <= 0 || !R.itemDef(code)) return;
     const lx = Math.max(60, Math.min(8940, int(x) + Math.round((i - (n - 1) / 2) * 44) + randInt(-12, 12))); i++;
-    const own = t + (ownerOnly ? R.LOOT_TTL : R.LOOT_OWN);
+    const own = t + R.LOOT_OWN; // ca do Boss: nguoi khac cung nhat duoc sau LOOT_OWN giay
     const row = { id: ++lootSeq, stage: int(stage), x: lx, code, qty: q, owner_id: owner, own_until: own, expire_at: t + R.LOOT_TTL, taken: 0 };
     LOOT.push(row);
     res.push({ id: row.id, code, qty: q, x: lx, owner, own: own - t, ttl: R.LOOT_TTL });
