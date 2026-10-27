@@ -46,6 +46,7 @@
       if (P.user_channel) {
         this.uch = this.pusher.subscribe(P.user_channel);
         this.uch.bind('reward', d => this.emit('reward', d));
+        this.uch.bind('social', d => this.emit('social', d)); // loi moi giao dich / thach dau / ket ban
       }
       return j;
     },
@@ -73,7 +74,7 @@
         if (now - this.lastMoveAt < 450) return; this.lastMoveAt = now;
         Backend.req('api/rt.php', Object.assign({ action: 'move', stage: this.stage, socket_id: this.socketId || '' }, d));
       } else {
-        if (now - this.lastMoveAt < 300) return; this.lastMoveAt = now;
+        if (now - this.lastMoveAt < 100) return; this.lastMoveAt = now; // Pusher: toi da 10 client event / giay
         try { this.ch.trigger('client-move', Object.assign({ id: this.me }, d)); } catch (_) { }
       }
     },

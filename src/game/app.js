@@ -698,24 +698,29 @@
 
   // menu khi bam vao 1 nguoi choi
   let menuId = 0, menuAt = 0;
+  // Hien menu NGAY bang thong tin co san (ban do chung), ho so day du tu may chu cap nhat sau
   async function playerMenu(id, name, cx, cy) {
     id = +id; if (!id || id === +U().id) return;
     const m = $('pmenu'), wrap = $('stageWrap').getBoundingClientRect();
     menuId = id; menuAt = Date.now();
-    m.innerHTML = '<div class="pm-head"><b>' + esc(name || 'Người chơi') + '</b><small>Đang tải...</small></div>';
+    const mi = (window.RT && RT.members && RT.members[id]) || {};
+    const draw = p => {
+      const sc = B().sectOf(p.sect), k = p.counter == null ? B().counterMult(U().sect, p.sect) : +p.counter;
+      const fbtn = p.rel === 'friend' ? '<button type="button" data-pmact="unfriend">✕ Hủy kết bạn</button>' : p.rel === 'sent' ? '<button type="button" disabled>⏳ Đã gửi lời mời kết bạn</button>' : p.rel === 'incoming' ? '<button type="button" data-pmact="friend">✔ Đồng ý kết bạn</button>' : '<button type="button" data-pmact="friend">➕ Kết bạn</button>';
+      const st = p.online == null ? '<span class="ok">● cùng bản đồ</span>' : p.online ? '<span class="ok">● trực tuyến · bản đồ ' + p.online + '</span>' : '<span class="sub">● ngoại tuyến</span>';
+      m.innerHTML = '<div class="pm-head">' + (sc ? icon(sc.icon, 28) : '') + '<div><b>' + esc(p.nickname) + '</b><small>Cấp ' + (p.level || 1) + (sc ? ' · ' + esc(sc.name) : '') + (p.guild ? ' · 🏯 ' + esc(p.guild) : '') + '</small>' +
+        '<small>' + st + (p.provoke >= 100 ? ' <span class="warn">[TRUY NÃ]</span>' : p.pk_mode ? ' <span class="purple">[PK]</span>' : '') + (k > 1 ? ' <span class="ok">· bạn khắc chế</span>' : k < 1 ? ' <span class="warn">· khắc chế bạn</span>' : '') + '</small></div><button type="button" class="pm-x" data-pmact="close">✕</button></div>' +
+        '<button type="button" data-pmact="chat">💬 Trò chuyện riêng</button><button type="button" data-pmact="trade">🤝 Giao dịch tiền / đồ</button>' +
+        '<div class="pm-duel"><button type="button" data-pmact="duel">⚔️ Thách đấu</button><input id="duelStake" type="number" min="0" max="100000" step="100" value="' + (($('duelStake') || {}).value || 0) + '" title="Cược ngân lượng (0 = đấu giao hữu)"><small>cược</small></div>' + fbtn;
+      m.dataset.name = p.nickname;
+    };
+    draw({ nickname: name || mi.name || 'Người chơi', level: mi.lv, sect: mi.sect, rel: 'none' });
     m.hidden = false;
     const x = (cx == null ? wrap.left + wrap.width / 2 : cx) - wrap.left, y = (cy == null ? wrap.top + wrap.height / 3 : cy) - wrap.top;
     m.style.left = Math.max(6, Math.min(wrap.width - 236, x + 8)) + 'px'; m.style.top = Math.max(6, Math.min(wrap.height - 290, y - 20)) + 'px';
     const j = await FR('profile&target_id=' + id);
     if (menuId !== id || m.hidden) return;
-    if (!j.ok) { m.innerHTML = '<p class="warn">' + esc(j.error) + '</p>'; return; }
-    const p = j.p, sc = B().sectOf(p.sect), k = +p.counter;
-    const fbtn = p.rel === 'friend' ? '<button type="button" data-pmact="unfriend">✕ Hủy kết bạn</button>' : p.rel === 'sent' ? '<button type="button" disabled>⏳ Đã gửi lời mời kết bạn</button>' : p.rel === 'incoming' ? '<button type="button" data-pmact="friend">✔ Đồng ý kết bạn</button>' : '<button type="button" data-pmact="friend">➕ Kết bạn</button>';
-    m.innerHTML = '<div class="pm-head">' + (sc ? icon(sc.icon, 28) : '') + '<div><b>' + esc(p.nickname) + '</b><small>Cấp ' + p.level + (sc ? ' · ' + esc(sc.name) : '') + (p.guild ? ' · 🏯 ' + esc(p.guild) : '') + '</small>' +
-      '<small>' + (p.online ? '<span class="ok">● trực tuyến · bản đồ ' + p.online + '</span>' : '<span class="sub">● ngoại tuyến</span>') + (p.provoke >= 100 ? ' <span class="warn">[TRUY NÃ]</span>' : p.pk_mode ? ' <span class="purple">[PK]</span>' : '') + (k > 1 ? ' <span class="ok">· bạn khắc chế</span>' : k < 1 ? ' <span class="warn">· khắc chế bạn</span>' : '') + '</small></div><button type="button" class="pm-x" data-pmact="close">✕</button></div>' +
-      '<button type="button" data-pmact="chat">💬 Trò chuyện riêng</button><button type="button" data-pmact="trade">🤝 Giao dịch tiền / đồ</button>' +
-      '<div class="pm-duel"><button type="button" data-pmact="duel">⚔️ Thách đấu</button><input id="duelStake" type="number" min="0" max="100000" step="100" value="0" title="Cược ngân lượng (0 = đấu giao hữu)"><small>cược</small></div>' + fbtn;
-    m.dataset.name = p.nickname;
+    if (j.ok) draw(j.p);
   }
   function closeMenu(soft) { if (soft && Date.now() - menuAt < 400) return; const m = $('pmenu'); if (m) m.hidden = true; menuId = 0; }
 
@@ -764,10 +769,32 @@
     if (c) c.classList.toggle('blink', pmUnread > 0);
     const hb = document.querySelector('#hotbar [data-win="social"]'); if (hb) { let b = hb.querySelector('.badge'); if (!b) { b = document.createElement('span'); b.className = 'badge'; hb.appendChild(b); } b.textContent = socialBadge; b.hidden = !socialBadge; }
   }
-  let lastSocial = 0;
+  // Loi moi giao dich / thach dau gui toi minh: bat the ngay tren man hinh (Dong y / Tu choi), khong can mo bang Ban be
+  const offerSeen = {};
+  let offerBusy = false;
+  async function checkOffers() {
+    if (offerBusy) return; offerBusy = true;
+    try { const j = await FR('offers'); if (j && j.ok) (j.offers || []).filter(o => o.incoming && !offerSeen[o.id]).forEach(o => { offerSeen[o.id] = 1; offerShow(o); }); }
+    finally { offerBusy = false; }
+  }
+  function offerShow(o) {
+    const bar = $('pmBar'); if (!bar) return;
+    const d = document.createElement('div'); d.className = 'pm-card offer-card';
+    d.innerHTML = (o.kind === 'duel'
+      ? '<b>⚔️ ' + esc(o.from_name) + ' thách đấu bạn</b><span>' + (o.stake ? 'Cược ' + fmt(o.stake) + ' ngân lượng' : 'Đấu giao hữu') + '</span>'
+      : '<b>🤝 ' + esc(o.from_name) + ' mời giao dịch</b><span>Đưa bạn: <b class="ok">' + esc(o.give) + '</b><br>Đổi lấy: <b class="warn">' + esc(o.ask) + '</b></span>') +
+      '<div class="row-btn"><button type="button" class="btn small green" data-offacc="' + o.id + '" data-kind="' + o.kind + '">' + (o.kind === 'duel' ? '⚔ Nhận đấu' : '✔ Đồng ý') + '</button><button type="button" class="btn small red" data-offdec="' + o.id + '">Từ chối</button></div>' +
+      '<button type="button" class="pm-x" data-act="pmclose">✕</button>';
+    bar.prepend(d); while (bar.children.length > 4) bar.lastChild.remove();
+    setTimeout(() => { if (d.isConnected) { d.classList.add('out'); setTimeout(() => d.remove(), 400); } }, 90000);
+    Game.Sfx.play('horn');
+  }
+  let lastSocial = 0, lastOffers = 0;
   function handleSocial(sc) {
     if (!sc) return;
     (sc.pms || []).forEach(pmShow);
+    if ((+sc.offers || 0) > lastOffers) checkOffers();
+    lastOffers = +sc.offers || 0;
     const n = (+sc.offers || 0) + (+sc.freq || 0);
     if (n > lastSocial) { toast('🔔 Bạn có ' + n + ' lời mời mới (giao dịch / thách đấu / kết bạn) - bấm V', 'ok'); if (!$('ovWin').hidden && activeTab === 'social') renderSocial(); }
     lastSocial = n; socialBadge = n; updateBadges();
@@ -833,14 +860,15 @@
     if (d.act === 'pmclose') { b.parentElement.remove(); return; }
     if (d.act === 'duelclose') { duelResult = null; renderSocial(); return; }
     if (d.offacc) {
+      const card = b.closest('.offer-card'); if (card) card.remove();
       const duel = d.kind === 'duel', r = await FR(duel ? 'duel_accept' : 'trade_accept', { id: d.offacc });
       if (!r.ok) { toast(r.error, 'err'); renderSocial(); return; }
       if (r.user) B()._set(r.user);
-      if (duel) { duelResult = r; toast(r.win ? '🏆 Thắng thách đấu!' : '💀 Thua thách đấu', r.win ? 'ok' : 'err'); Game.Sfx.play(r.win ? 'win' : 'die'); }
+      if (duel) { duelResult = r; toast(r.win ? '🏆 Thắng thách đấu!' : '💀 Thua thách đấu', r.win ? 'ok' : 'err'); Game.Sfx.play(r.win ? 'win' : 'die'); if (card) { openWin('social'); return; } }
       else { toast('🤝 Giao dịch thành công: nhận ' + r.got, 'ok'); Game.Sfx.play('coin'); }
       renderSocial(); return;
     }
-    if (d.offdec || d.offcan) { const r = await FR(d.offdec ? 'offer_decline' : 'offer_cancel', { id: d.offdec || d.offcan }); if (!r.ok) toast(r.error, 'err'); renderSocial(); return; }
+    if (d.offdec || d.offcan) { const card = b.closest('.offer-card'); if (card) card.remove(); const r = await FR(d.offdec ? 'offer_decline' : 'offer_cancel', { id: d.offdec || d.offcan }); if (!r.ok) toast(r.error, 'err'); renderSocial(); return; }
     if (d.fracc) { const r = await FR('friend_accept', { target_id: d.fracc }); toast(r.ok ? 'Đã kết bạn' : r.error, r.ok ? 'ok' : 'err'); renderSocial(); return; }
     if (d.frrm) { await FR('friend_remove', { target_id: d.frrm }); renderSocial(); return; }
     if (d.sect) { sectPick = d.sect; showSect(); Game.Sfx.play('click'); return; }
@@ -1141,6 +1169,8 @@
     setInterval(() => { if (!$('ovWin').hidden && (activeTab === 'pk' || activeTab === 'rank')) renderTab(activeTab); }, 20000);
     Game.onPvpHit = pvpHit;
     Game.onPlayerClick = (id, name, x, y) => playerMenu(id, name, x, y);
+    if (window.RT) RT.on('social', d => { if (d && d.text) addChat('Hệ thống', d.text, false); checkOffers(); });
+    checkOffers();
   }
 
   document.addEventListener('DOMContentLoaded', () => {

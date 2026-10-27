@@ -279,6 +279,10 @@ body.game-page{background:#06040a}
 .pm-bar{position:absolute;top:7.5cqw;left:50%;transform:translateX(-50%);z-index:6;display:flex;flex-direction:column;gap:6px;width:min(560px,60cqw);pointer-events:none}
 .pm-card{pointer-events:auto;display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,#5a1a5a,#2a1a40);border:2px solid #ff8ad8;border-radius:12px;padding:6px 10px;color:#fff;box-shadow:0 4px 18px rgba(255,90,200,.45);animation:pmin .3s ease-out;transition:opacity .4s,transform .4s;font-size:13px}
 .pm-card b{color:#ffb8ec;white-space:nowrap}.pm-card span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pm-card.out{opacity:0;transform:translateY(-10px)}
+.pm-card.offer-card{flex-direction:column;align-items:stretch;gap:6px;max-width:340px;padding:10px 34px 10px 12px;position:relative;background:linear-gradient(135deg,#4a3410,#2a1a08);border-color:#ffd76a;box-shadow:0 6px 24px rgba(255,200,80,.45)}
+.pm-card.offer-card b{color:#ffe6a0;white-space:normal}.pm-card.offer-card span{white-space:normal;font-size:12px;line-height:1.45}
+.pm-card.offer-card .row-btn{display:flex;gap:6px}.pm-card.offer-card .row-btn .btn{flex:1}
+.pm-card.offer-card .pm-x{position:absolute;top:6px;right:6px}
 .pm-x{background:none;border:0;color:#fff;cursor:pointer;font-size:14px;padding:0 4px}
 @keyframes pmin{from{opacity:0;transform:translateY(-14px) scale(.96)}to{opacity:1;transform:none}}
 .chat-dock .msg.pm b{color:#ff8ad8}.chat-dock .msg.pm{background:rgba(255,90,200,.12);border-radius:4px}

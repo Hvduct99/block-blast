@@ -712,7 +712,9 @@
       const info = RT.members[id] || {}, o = G.others.get(id);
       const ny = clamp(+d.y || GROUND, 40, GROUND), nx = +d.x || 0;
       const v = { tx: nx, ty: ny, face: +d.f < 0 ? -1 : 1, anim: ANIM[d.a] ? d.a : 'idle', hp: +d.hp || 0, maxhp: Math.max(1, +d.mhp || 1), name: info.name || ('#' + id), lv: info.lv || 1, sect: info.sect || '', av: MODELS[d.av] ? d.av : (info.av || 'samurai'), wing: d.w == null ? -1 : (+d.w | 0), seen: G.t };
-      if (o) Object.assign(o, v); else G.others.set(id, Object.assign({ x: nx, y: ny }, v));
+      // uoc tinh van toc tu 2 goi tin lien tiep -> du doan vi tri giua cac goi (do khung giat)
+      if (o) { const gap = G.t - (o.seen || 0); v.vx = gap > 0.03 && gap < 1 ? clamp((nx - o.tx) / gap, -1500, 1500) : 0; v.vy = gap > 0.03 && gap < 1 ? clamp((ny - o.ty) / gap, -2500, 2500) : 0; if (Math.abs(nx - o.x) > 700) { o.x = nx; o.y = ny; } Object.assign(o, v); }
+      else G.others.set(id, Object.assign({ x: nx, y: ny, vx: 0, vy: 0 }, v));
     });
     RT.on('member_removed', id => { G.others.delete(+id); delete G.bubbles[id]; });
     RT.on('members', () => { G.lastSent = null; });
@@ -1005,7 +1007,11 @@
     updateProjs(dt);
     updateFx(dt);
     updateParticles(dt);
-    G.others.forEach(o => { o.x += (o.tx - o.x) * Math.min(1, dt * 8); o.y += (o.ty - o.y) * Math.min(1, dt * 8); o.moving = Math.abs(o.tx - o.x) > 3; });
+    G.others.forEach(o => {
+      const ahead = Math.min(Math.max(0, G.t - (o.seen || G.t)), 0.25); // ngoai suy toi da 0.25s sau goi tin cuoi
+      const gx = o.tx + (o.vx || 0) * ahead, gy = clamp(o.ty + (o.vy || 0) * ahead, 40, GROUND), k = Math.min(1, dt * 14);
+      o.x += (gx - o.x) * k; o.y += (gy - o.y) * k; o.moving = Math.abs(o.vx || 0) > 20 || Math.abs(gx - o.x) > 3;
+    });
     if (G.mode === 'train') trainSpawner(dt);
     if (G.shared) updateNet(dt);
     if (G.portals.length) updatePortals(dt);
@@ -1687,10 +1693,12 @@
     const a = still && A.idle ? A.idle : A.walk;
     return [a, Math.floor(e.at * d.fps * (e.stunT > 0 ? 0.3 : still && !A.idle ? 0.45 : 1)) % a.f.length];
   }
+  // Toa do khung tinh tren atlas goc 2048px; CDN (Hostinger) co the thu nho anh -> nhan ti le that
+  const MOB_ATLAS_W = 2048;
   function monFrame(im, a, i, x, y, flip, sc) {
-    const f = a.f[i]; ctx.save(); ctx.translate(x, y); if (flip) ctx.scale(-1, 1);
+    const f = a.f[i], k = (im.naturalWidth || im.width || MOB_ATLAS_W) / MOB_ATLAS_W; ctx.save(); ctx.translate(x, y); if (flip) ctx.scale(-1, 1);
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(im, f[0], f[1], a.w, a.h, -a.ax * sc, -a.ay * sc, a.w * sc, a.h * sc);
+    ctx.drawImage(im, f[0] * k, f[1] * k, a.w * k, a.h * k, -a.ax * sc, -a.ay * sc, a.w * sc, a.h * sc);
     ctx.restore();
   }
   function drawMonAt(e, sx, y, alpha) {
