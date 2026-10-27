@@ -76,7 +76,7 @@
   const ANIM = MODELS.samurai.anims; // ten dong tac hop le
   // Co che 6 chieu (giong moi phai); ten/mau/icon lay theo mon phai
   const SKILL_BASE = [
-    { id: 'atk', key: 'J', lv: 1, mp: 0, cd: 0.30, des: 'Đòn đánh thường, hồi nội lực' },
+    { id: 'atk', key: 'R', lv: 1, mp: 0, cd: 0.30, des: 'Đòn đánh thường, hồi nội lực' },
     { id: 'tt', key: '1', lv: 1, mp: 12, cd: 2.2, des: 'Liên hoàn ám kình xuyên thấu phía trước' },
     { id: 'sth', key: '2', lv: 3, mp: 28, cd: 7, des: 'Chấn động diện rộng, choáng quái xung quanh' },
     { id: 'dl', key: '3', lv: 5, mp: 35, cd: 5, des: 'Lướt tới + kình khí khổng lồ xuyên địch' },
@@ -854,7 +854,7 @@
   function tryPvp(mult, o) {
     if (!pkMode() || !G.onPvpHit || !o || !o.box) return;
     G.others.forEach((ot, id) => {
-      if (ot.x > o.box[0] && ot.x < o.box[1] && Math.abs(ot.y - G.p.y) < 120 && !inSafe(ot.x) && !inSafe(G.p.x) && canPk(id)) G.onPvpHit(id, mult, ot.name);
+      if (ot.x > o.box[0] && ot.x < o.box[1] && Math.abs(ot.y - G.p.y) < 120 && !inSafe(ot.x) && !inSafe(G.p.x) && canPk(id)) { ot.fightT = G.t; G.onPvpHit(id, mult, ot.name); }
     });
   }
   function nameCol(id, def) { const i = G.pkInfo[id]; if (!i) return def; return +i.prov >= 100 ? '#ff4040' : +i.prov >= 50 ? '#ff9a3a' : +i.pk > 0 ? '#d08aff' : def; }
@@ -1755,7 +1755,10 @@
       const pi = G.pkInfo[id];
       txt((o.lv ? 'Cấp ' + o.lv + ' ' : '') + o.name + (pi && +pi.prov >= 100 ? ' [TRUY NÃ]' : pi && +pi.pk > 0 ? ' [PK]' : ''), sx, o.y - 92, 13, nameCol(id, '#9ad0ff'), 'center', true);
       if (sc) txt('[' + sc.name + ']', sx, o.y - 106, 10, '#cfe', 'center', true);
-      bar(sx - 28, o.y - 86, 56, 5, clamp(o.hp / Math.max(1, o.maxhp || 200), 0, 1), '#4aa0ff');
+      // Giao chien (doi phuong / minh bat PK, vua chem nhau, hoac dang mat mau): thanh mau do lon + so mau tren dau
+      const hpk = clamp(o.hp / Math.max(1, o.maxhp || 200), 0, 1), fight = (pi && +pi.pk > 0) || pkMode() || G.t - (o.fightT || -99) < 12 || hpk < 1;
+      if (fight) { bar(sx - 40, o.y - 88, 80, 9, hpk, hpk > 0.5 ? '#3ad06a' : hpk > 0.25 ? '#f0b030' : '#ff3a3a', true); txt(Math.max(0, Math.round(o.hp)) + ' / ' + Math.round(o.maxhp || 0), sx, o.y - 71, 10, '#fff', 'center', true); }
+      else bar(sx - 28, o.y - 86, 56, 5, hpk, '#4aa0ff');
       drawBubble(id, sx, o.y - 122);
     });
     G.portals.forEach(pt => drawPortal(pt, cx));
@@ -2293,11 +2296,11 @@
   }
 
   // ================= INPUT =================
-  // Di chuyen: A D (hoac mui ten), W / Space nhay, S xuong be. J / X danh thuong. 1-6 tuyet hoc. Q / E thuoc mau / noi luc.
+  // Di chuyen: A D (hoac mui ten), W / Space nhay, S xuong be. R (hoac J / X) danh thuong. 1-6 tuyet hoc. Q / E thuoc mau / noi luc.
   const KEYMAP = {
     ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'jump', Space: 'jump',
     KeyA: 'left', KeyD: 'right', KeyS: 'down', KeyW: 'jump',
-    KeyJ: 'atk', KeyX: 'atk', ShiftLeft: 'dash', ShiftRight: 'dash', KeyL: 'dash', KeyF: 'talk',
+    KeyR: 'atk', KeyJ: 'atk', KeyX: 'atk', ShiftLeft: 'dash', ShiftRight: 'dash', KeyL: 'dash', KeyF: 'talk',
     Digit1: 'tt', Digit2: 'sth', Digit3: 'dl', Digit4: 'cd', Digit5: 'ult', Digit6: 'vx',
     Numpad1: 'tt', Numpad2: 'sth', Numpad3: 'dl', Numpad4: 'cd', Numpad5: 'ult', Numpad6: 'vx',
     KeyQ: 'hp', KeyE: 'mpp',
@@ -2310,7 +2313,7 @@
     const a = KEYMAP[e.code];
     if (down && G.state === 'npc' && (e.code === 'Escape' || e.code === 'KeyF')) { if (window.UI) UI.closeNpc(); e.preventDefault(); return; }
     if (down && (e.code === 'Escape' || e.code === 'KeyP') && (G.state === 'play' || G.state === 'pause')) { togglePause(); e.preventDefault(); return; }
-    if (G.state === 'dialog' && down && (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyJ' || e.code === 'KeyX')) { if (window.UI) UI.dialogNext(); e.preventDefault(); return; }
+    if (G.state === 'dialog' && down && (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyR' || e.code === 'KeyJ' || e.code === 'KeyX')) { if (window.UI) UI.dialogNext(); e.preventDefault(); return; }
     if (!a) return;
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
     if (down && (a === 'left' || a === 'right' || a === 'jump')) G.walkTo = null; // tu bam di chuyen -> huy tu chay toi muc tieu

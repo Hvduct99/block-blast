@@ -30,7 +30,7 @@
   const STONE_COLOR = { atk: '#ff5a4a', hp: '#46d06a', mp: '#4aa8ff', def: '#f0c030', crit: '#c47cff' };
   const AV_NAME = { samurai: 'Kiếm khách (nam)', ninja: 'Thích khách (nam)', kunoichi: 'Nữ hiệp (nữ)' };
   const AV_ICON = { samurai: 'ui_char', ninja: 'ui_ninja', kunoichi: 'ui_female' };
-  const SKILL_KEYS = 'J123456';
+  const SKILL_KEYS = 'R123456';
   const AV_PICK = ['samurai', 'kunoichi'];      // 2 nhan vat: nam / nu
   const SECT_LV = () => Game.SECT_LV || 25;     // cap duoc bai nhap mon phai
   const NOSECT_COL = '#8a96aa';
@@ -358,8 +358,18 @@
     const avd = AVD()[av] || {}, am = avd.mods || {};
     const row = (k, name) => '<tr><td>' + name + '</td><td>' + base[k] + '</td><td class="ok">' + (pot[k] ? '+' + pot[k] : '-') + '</td><td class="ok">' + (g[k] ? '+' + g[k] : '-') + '</td><td>' + (k === 'crit' ? '-' : pct(md[k] || 0)) + '</td><td>' + (k === 'crit' ? (avd.crit ? '<span class="ok">+' + avd.crit + '%</span>' : '-') : pct(am[k] || 0)) + '</td><td><b>' + c[k] + (k === 'crit' ? '%' : '') + '</b></td></tr>';
     const expPct = lv >= B().RULES.maxLevel ? 100 : Math.min(100, Math.round((u.exp || 0) / need * 100));
-    let h = '<div class="char-v7"><div class="char-left">' +
+    // O trang bi bao quanh nhan vat: trai = mu / giap / giay, phai = vu khi / nhan / day chuyen, duoi = canh
+    const dslot = (sl, cls) => {
+      const e = myEquips().find(x => x.equipped && x.slot === sl), g2 = Object.keys(CAT_SLOTS).find(k => CAT_SLOTS[k].includes(sl)) || 'acc';
+      return '<div class="dslot ' + cls + (e ? ' full' : '') + '"><span class="slot-name">' + esc(EQ().slotName[sl] || sl) + '</span>' + (e
+        ? '<span class="eq-ico">' + iconOf(e.code, 42) + (e.plus ? '<em>+' + e.plus + '</em>' : '') + '</span><span class="dn">' + eqName(e) + '</span><small class="ok">' + stTxt(e.st) + '</small>' + sockets(e) +
+          '<div class="row-btn"><button class="btn small ghost" type="button" data-eq="unequip" data-id="' + e.id + '" title="Tháo">Tháo</button><button class="btn small" type="button" data-forgeeq="' + e.id + '" title="Cường hóa">+</button></div>'
+        : '<i class="empty">Trống</i><div class="row-btn"><button class="btn small ghost" type="button" data-bagcat="' + g2 + '" data-gobag="1" title="Hành trang">🎒</button><button class="btn small" type="button" data-shopgo="' + g2 + '" title="Tiệm">🛒</button></div>') + '</div>';
+    };
+    let h = '<div class="char-v7 doll-v"><div class="char-left">' +
+      '<div class="doll">' + dslot('helmet', 'l1') + dslot('armor', 'l2') + dslot('boots', 'l3') +
       '<div class="char-portrait" style="--c:' + color + '">' + portrait(av, color, 170, 210) + '<div class="char-name"><b>' + esc(u.nickname) + '</b><small>' + (sc ? icon(sc.icon, 18) + ' ' + esc(sc.name) : 'Vô Môn Phái') + '</small></div></div>' +
+      dslot('weapon', 'r1') + dslot('ring', 'r2') + dslot('amulet', 'r3') + dslot('wing', 'b1') + '</div>' +
       (sc ? '' : lv >= SECT_LV() ? '<button class="btn green" type="button" data-act="opensect" style="width:100%">⛩ Bái nhập môn phái</button>' : '<small class="sub av-note">Đạt cấp ' + SECT_LV() + ' để bái nhập môn phái (còn ' + (SECT_LV() - lv) + ' cấp)</small>') +
       '<div class="av-switch">' + AV_PICK.map(a => '<button type="button" class="btn small ' + (a === av ? '' : 'ghost') + '" data-avset="' + a + '" title="' + esc(((AVD()[a] || {}).desc || '')) + '">' + icon(AV_ICON[a], 18) + ' ' + AV_NAME[a].split(' (')[0] + '</button>').join('') + '</div>' +
       '<small class="sub av-note">' + modTxt(am, avd.crit) + '<br>Đổi tạo hình: ' + fmt((window.TATON_SECTS || {}).avatarCost || 2000) + ' ngân lượng</small>' +
@@ -377,12 +387,7 @@
       '<p class="sub">PK: <b>' + ['Hòa bình', 'PK Bang', 'Đồ sát'][u.pk_mode | 0] + '</b> · Thân thiện <b>' + (u.friendly == null ? 100 : u.friendly) + '</b> · Khiêu khích <b class="' + ((u.provoke | 0) >= 100 ? 'warn' : '') + '">' + (u.provoke | 0) + '</b>' + (u.jail ? ' · <span class="warn">TRUY NÃ - kẹt bản đồ ' + u.jail + '</span>' : '') + '</p>' +
       '<h4>' + icon('sk_atk', 20) + ' Tuyệt học</h4><div class="skl">' + Game.SKILLS.map(s =>
         { const op = lv >= s.lv && !s.sectLock; return '<div class="' + (op ? '' : 'lock') + '">' + icon(s.icon, 26) + '<b>[' + s.key + '] ' + esc(s.name) + '</b> <small>' + (op ? (s.mp ? s.mp + ' nội lực · ' : '') + 'hồi ' + s.cd + 's' : s.sectLock ? '🔒 Cần môn phái (cấp ' + SECT_LV() + ')' : '🔒 Cấp ' + s.lv) + '</small><br><small>' + esc(s.des) + '</small></div>'; }).join('') + '</div></div>';
-    const SG = [['weapon', '⚔️ Vũ khí'], ['cloth', '🥋 Quần áo'], ['acc', '💍 Trang sức hỗ trợ'], ['wing', '🕊️ Cánh']];
-    h += '<div class="char-right"><h4>' + icon('ui_bag', 20) + ' Trang bị đang mặc</h4>' + SG.map(([g, title]) => '<h5 class="slot-h">' + title + '</h5><div class="slots">' + CAT_SLOTS[g].filter(sl => EQ().slots.includes(sl)).map(sl => {
-      const e = myEquips().find(x => x.equipped && x.slot === sl);
-      return '<div class="slot' + (e ? ' full' : '') + '"><span class="slot-name">' + esc(EQ().slotName[sl]) + '</span>' + (e ? '<span class="eq-ico">' + iconOf(e.code, 40) + (e.plus ? '<em>+' + e.plus + '</em>' : '') + '</span>' + eqName(e) + '<small class="ok">' + stTxt(e.st) + '</small>' + sockets(e) +
-        '<div class="row-btn"><button class="btn small ghost" type="button" data-eq="unequip" data-id="' + e.id + '">Tháo</button><button class="btn small" type="button" data-forgeeq="' + e.id + '">Cường hóa</button></div>' : '<i class="empty">Trống</i><button class="btn small ghost" type="button" data-bagcat="' + g + '" data-gobag="1">Hành trang</button><button class="btn small" type="button" data-shopgo="' + g + '">🛒 Tiệm</button>') + '</div>';
-    }).join('') + '</div>').join('') + '</div></div>';
+    h += '</div>';
     $('p-char').innerHTML = h;
   }
 

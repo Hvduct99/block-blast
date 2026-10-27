@@ -534,3 +534,27 @@ html.mobile .cc-ok{font-size:14px;padding:8px 4px}
 .char-right .slots{margin-bottom:4px}
 html.mobile .cat-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}html.mobile .cat-tabs::-webkit-scrollbar{display:none}
 html.mobile .cat-tabs .subtab{flex:none;white-space:nowrap}
+
+/* ===== Nhan vat: o trang bi bao quanh nhan vat ===== */
+.char-v7.doll-v{grid-template-columns:minmax(440px,520px) 1fr}
+.doll{display:grid;grid-template-columns:128px 1fr 128px;grid-template-rows:repeat(3,auto) auto;gap:8px;align-items:stretch;margin-bottom:10px}
+.doll .char-portrait{grid-column:2;grid-row:1/4;display:flex;flex-direction:column;justify-content:center;box-shadow:inset 0 0 40px #0008,0 0 18px color-mix(in srgb,var(--c) 40%,transparent)}
+.doll .l1{grid-column:1;grid-row:1}.doll .l2{grid-column:1;grid-row:2}.doll .l3{grid-column:1;grid-row:3}
+.doll .r1{grid-column:3;grid-row:1}.doll .r2{grid-column:3;grid-row:2}.doll .r3{grid-column:3;grid-row:3}
+.doll .b1{grid-column:2;grid-row:4;justify-self:center;width:150px}
+.dslot{position:relative;background:linear-gradient(#211a2e,#16111f);border:2px dashed #4a3a5a;border-radius:12px;padding:17px 5px 6px;min-height:112px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;font-size:11.5px}
+.dslot.full{border-style:solid;border-color:#9a7a3a;background:radial-gradient(circle at 50% 30%,#3a2c18,#17111f 75%);box-shadow:0 0 12px #ffd76a22}
+.dslot .slot-name{position:absolute;top:2px;left:0;right:0;font-size:10px;color:#cdb98a;letter-spacing:.3px}
+.dslot .dn{line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.dslot small{font-size:10px;line-height:1.15}.dslot .empty{color:#776;margin:10px 0 4px;font-size:12px}
+.dslot .row-btn{margin-top:auto;gap:4px;justify-content:center}.dslot .btn{padding:2px 8px;font-size:11px}
+@media(max-width:1000px){.char-v7.doll-v{grid-template-columns:1fr}.doll{max-width:560px;margin:0 auto 10px}}
+@media(max-width:520px){.doll{grid-template-columns:96px 1fr 96px}.doll .char-portrait canvas{width:120px;height:150px}.dslot{min-height:96px;font-size:10.5px}}
+
+/* ===== Ban do the gioi: chu to, de doc ===== */
+.wmap-wrap{max-width:84cqw}
+.map-box h2{font-size:24px}.map-box .sub{font-size:15px}
+.map-detail{font-size:15px}.map-detail b{font-size:17px}
+.stage-card{min-height:96px;padding:12px 8px 10px}
+.stage-card .num{font-size:15px}.stage-card b{font-size:16px}.stage-card small{font-size:13px}
+.map-list summary{font-size:16px;cursor:pointer;padding:6px 0}

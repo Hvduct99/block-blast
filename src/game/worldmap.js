@@ -77,7 +77,7 @@
       stages.forEach(s => {
         const p = POS[s.idx]; if (!p) return;
         const lock = s.idx > o.maxStage, st = (o.stars || {})[String(s.idx)] || 0, sel = o.selected === s.idx, hov = o.hover === s.idx;
-        const R = sel || hov ? 17 : 14;
+        const R = sel || hov ? 22 : 18;
         g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.ellipse(p[0] + 2, p[1] + 4, R, R * 0.55, 0, 0, 7); g.fill();
         const fg = g.createRadialGradient(p[0] - 4, p[1] - 5, 2, p[0], p[1], R);
         if (lock) { fg.addColorStop(0, '#b8b0a0'); fg.addColorStop(1, '#5a544a'); }
@@ -85,10 +85,10 @@
         else { fg.addColorStop(0, '#ffe68a'); fg.addColorStop(1, '#a8501a'); }
         g.fillStyle = fg; g.beginPath(); g.arc(p[0], p[1], R, 0, 7); g.fill();
         g.lineWidth = sel ? 3.5 : 2; g.strokeStyle = sel ? '#ffffff' : '#3a2008'; g.stroke();
-        g.font = 'bold 13px "Segoe UI",Arial'; g.textAlign = 'center'; g.fillStyle = lock ? '#ddd' : '#2a1404'; g.fillText(lock ? '🔒' : String(s.idx), p[0], p[1] + 5);
-        g.font = 'bold 12px "Segoe UI",Arial'; g.lineWidth = 3; g.strokeStyle = 'rgba(241,226,184,0.95)';
-        g.strokeText(s.name, p[0], p[1] + R + 14); g.fillStyle = lock ? '#7a6a5a' : '#3a1a04'; g.fillText(s.name, p[0], p[1] + R + 14);
-        if (st) { g.fillStyle = '#d89a10'; g.font = 'bold 11px Arial'; g.fillText('★'.repeat(st), p[0], p[1] - R - 5); }
+        g.font = 'bold 18px "Segoe UI",Arial'; g.textAlign = 'center'; g.fillStyle = lock ? '#ddd' : '#2a1404'; g.fillText(lock ? '🔒' : String(s.idx), p[0], p[1] + 6);
+        g.font = 'bold ' + (sel || hov ? 19 : 17) + 'px "Segoe UI",Arial'; g.lineWidth = 5; g.lineJoin = 'round'; g.strokeStyle = 'rgba(246,234,198,0.97)';
+        g.strokeText(s.name, p[0], p[1] + R + 19); g.fillStyle = lock ? '#6a5a4a' : '#3a1a04'; g.fillText(s.name, p[0], p[1] + R + 19);
+        if (st) { g.fillStyle = '#d89a10'; g.font = 'bold 15px Arial'; g.fillText('★'.repeat(st), p[0], p[1] - R - 6); }
       });
       // ban dang o day
       const cur = POS[o.current];
@@ -97,7 +97,7 @@
         g.strokeStyle = 'rgba(255,60,40,' + (0.6 - (t % 1) * 0.6) + ')'; g.lineWidth = 3; g.beginPath(); g.arc(cur[0], cur[1], 18 + (t % 1) * 22, 0, 7); g.stroke();
         g.fillStyle = '#3a2008'; g.fillRect(x - 1, y - 30, 3, 32);
         g.fillStyle = '#d02020'; g.beginPath(); g.moveTo(x + 2, y - 30); g.lineTo(x + 30 + Math.sin(t * 6) * 3, y - 23); g.lineTo(x + 2, y - 15); g.fill();
-        g.font = 'bold 12px "Segoe UI",Arial'; g.textAlign = 'left'; g.lineWidth = 3; g.strokeStyle = '#fff6d0'; g.strokeText('Bạn đang ở đây', x + 8, y - 36); g.fillStyle = '#a01010'; g.fillText('Bạn đang ở đây', x + 8, y - 36);
+        g.font = 'bold 17px "Segoe UI",Arial'; g.textAlign = 'left'; g.lineWidth = 4; g.strokeStyle = '#fff6d0'; g.strokeText('Bạn đang ở đây', x + 8, y - 36); g.fillStyle = '#a01010'; g.fillText('Bạn đang ở đây', x + 8, y - 36);
       }
     },
     hit(canvas, clientX, clientY) {
